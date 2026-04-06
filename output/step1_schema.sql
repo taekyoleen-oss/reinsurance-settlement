@@ -274,7 +274,9 @@ COMMENT ON COLUMN rs_account_currents.status IS 'draft→pending_approval→appr
 
 -- rs_transactions.account_current_id FK 추가 (rs_account_currents 생성 후)
 ALTER TABLE rs_transactions
-    ADD CONSTRAINT IF NOT EXISTS fk_tx_account_current
+    DROP CONSTRAINT IF EXISTS fk_tx_account_current;
+ALTER TABLE rs_transactions
+    ADD CONSTRAINT fk_tx_account_current
     FOREIGN KEY (account_current_id) REFERENCES rs_account_currents(id);
 
 -- =============================================================================

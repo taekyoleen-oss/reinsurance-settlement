@@ -59,7 +59,7 @@ export default function ExternalACDetailPage() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-xl font-bold text-[var(--text-primary)]">
-            정산서 {(ac as any).ac_no ?? (ac as any).ac_number ?? id.slice(0, 8)}
+            정산서 {(ac as any).ac_no ?? id.slice(0, 8)}
           </h1>
           <p className="text-sm text-[var(--text-secondary)] mt-1">
             {ac.period_from} ~ {ac.period_to}

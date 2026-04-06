@@ -7,10 +7,10 @@ export default async function ExternalDashboardPage() {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/login')
 
-  const { data: profileData } = await (supabase as any)
+  const { data: profileData } = await supabase
     .from('rs_user_profiles')
     .select('role')
-    .eq('id', user.id)
+    .eq('user_id', user.id)
     .single()
 
   const role = profileData?.role as string

@@ -179,9 +179,9 @@ BEGIN
     RAISE NOTICE 'rs_counterparties: % 행 (기대: 3)', v_counterparty_count;
     RAISE NOTICE 'rs_contracts:      % 행 (기대: 1)', v_contract_count;
     RAISE NOTICE 'rs_contract_shares: % 행 (기대: 2)', v_share_count;
-    RAISE NOTICE 'TRT-2025-001 지분율 합계: %% (기대: 100.000)', v_share_total;
+    RAISE NOTICE 'TRT-2025-001 지분율 합계: % (기대: 100.000)', v_share_total;
 
     IF v_share_total IS NOT NULL AND v_share_total <> 100 THEN
-        RAISE WARNING '지분율 합계가 100%%가 아닙니다: %%', v_share_total;
+        RAISE WARNING '지분율 합계가 100%%가 아닙니다: %', v_share_total;
     END IF;
 END $$;
