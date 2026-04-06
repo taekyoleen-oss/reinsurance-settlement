@@ -11,9 +11,9 @@ export default async function ExternalDashboardPage() {
     .from('rs_user_profiles')
     .select('role')
     .eq('user_id', user.id)
-    .single()
+    .single() as { data: { role: string } | null }
 
-  const role = profileData?.role as string
+  const role = profileData?.role ?? ''
 
   if (role !== 'cedant_viewer' && role !== 'reinsurer_viewer') {
     redirect('/dashboard')
