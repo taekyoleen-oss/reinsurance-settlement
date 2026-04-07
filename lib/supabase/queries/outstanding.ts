@@ -1,8 +1,10 @@
 import {
   calculateOutstanding,
   getAgingAnalysis,
+  getOutstandingDetail,
   type OutstandingResult,
   type AgingResult,
+  type OutstandingDetailItem,
 } from '@/lib/utils/outstanding'
 
 /**
@@ -24,4 +26,11 @@ export async function getAgingData(
   return getAgingAnalysis(counterpartyId)
 }
 
-export type { OutstandingResult, AgingResult }
+export async function getOutstandingDetailData(
+  counterpartyId?: string,
+  currencyCode?: string
+): Promise<OutstandingDetailItem[]> {
+  return getOutstandingDetail(counterpartyId, currencyCode)
+}
+
+export type { OutstandingResult, AgingResult, OutstandingDetailItem }

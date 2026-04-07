@@ -29,7 +29,7 @@ export default function OutstandingPage() {
   const [filterDirection, setFilterDirection] = useState('all')
 
   useEffect(() => {
-    fetch('/api/outstanding')
+    fetch('/api/outstanding?type=detail')
       .then((r) => r.json())
       .then((d) => setItems(Array.isArray(d) ? d : (d.data ?? [])))
       .catch(() => {})
