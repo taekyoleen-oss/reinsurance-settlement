@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import {
   getOutstandingByCounterparty,
   getAgingData,
-  getOutstandingDetail,
+  getOutstandingDetailData,
 } from '@/lib/supabase/queries/outstanding'
 
 /**
@@ -23,7 +23,7 @@ export async function GET(req: NextRequest) {
     }
 
     if (type === 'detail') {
-      const detail = await getOutstandingDetail(counterpartyId, currencyCode)
+      const detail = await getOutstandingDetailData(counterpartyId, currencyCode)
       return NextResponse.json({ data: detail })
     }
 
