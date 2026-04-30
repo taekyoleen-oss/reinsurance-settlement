@@ -15,39 +15,60 @@ import {
   TableRow,
 } from '@/components/ui/table'
 import { Badge } from '@/components/ui/badge'
-import { Plus } from 'lucide-react'
-import type { ContractRow } from '@/types'
+import { ClipboardList, Plus } from 'lucide-react'
+import { CedantFilterSelect } from '@/components/contracts/CedantFilterSelect'
+import type { ContractWithCedantRow } from '@/types'
 
 const STATUS_LABELS = { active: '활성', expired: '만료', cancelled: '취소' }
 const TYPE_LABELS = { treaty: 'Treaty', facultative: 'Facultative' }
 
 export default function ContractsPage() {
-  const [contracts, setContracts] = useState<ContractRow[]>([])
+  const [contracts, setContracts] = useState<ContractWithCedantRow[]>([])
   const [loading, setLoading] = useState(true)
+  const [loadError, setLoadError] = useState('')
   const [filterStatus, setFilterStatus] = useState('all')
   const [filterType, setFilterType] = useState('all')
   const [search, setSearch] = useState('')
+  const [debouncedSearch, setDebouncedSearch] = useState('')
+  const [filterCedantId, setFilterCedantId] = useState('')
+
+  useEffect(() => {
+    const t = setTimeout(() => setDebouncedSearch(search.trim()), 300)
+    return () => clearTimeout(t)
+  }, [search])
 
   useEffect(() => {
     const params = new URLSearchParams()
     if (filterStatus !== 'all') params.set('status', filterStatus)
     if (filterType !== 'all') params.set('contract_type', filterType)
+    if (debouncedSearch) params.set('search', debouncedSearch)
+    if (filterCedantId) params.set('cedant_id', filterCedantId)
 
-    fetch(`/api/contracts?${params}`)
-      .then((r) => r.json())
-      .then((d) => setContracts(Array.isArray(d) ? d : (d.data ?? [])))
-      .catch(() => {})
+    setLoading(true)
+    setLoadError('')
+    const qs = params.toString()
+    fetch(qs ? `/api/contracts?${qs}` : '/api/contracts')
+      .then(async (r) => {
+        const d = await r.json()
+        if (!r.ok) throw new Error(d.error ?? '계약 목록을 불러오지 못했습니다.')
+        setContracts(Array.isArray(d) ? d : (d.data ?? []))
+      })
+      .catch((e: Error) => {
+        setContracts([])
+        setLoadError(e.message)
+      })
       .finally(() => setLoading(false))
-  }, [filterStatus, filterType])
-
-  const filtered = contracts.filter((c) =>
-    !search || c.contract_no.toLowerCase().includes(search.toLowerCase())
-  )
+  }, [filterStatus, filterType, debouncedSearch, filterCedantId])
 
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-[var(--text-primary)]">계약 관리</h1>
+        <div>
+          <h1 className="text-2xl font-bold text-[var(--text-primary)]">계약 관리</h1>
+          <p className="mt-1 text-sm text-[var(--text-muted)]">
+            DB에 등록된 계약이 표시됩니다. 다음 단계 명세 입력에서 동일 계약을 선택·조회할 수 있습니다.
+          </p>
+        </div>
         <Link href="/contracts/new">
           <Button>
             <Plus className="h-4 w-4 mr-1" />
@@ -56,12 +77,17 @@ export default function ContractsPage() {
         </Link>
       </div>
 
-      <div className="flex gap-3">
+      <div className="flex flex-wrap items-end gap-3">
+        <CedantFilterSelect
+          value={filterCedantId}
+          onChange={setFilterCedantId}
+          triggerClassName="h-9 w-[min(100%,14rem)]"
+        />
         <Input
-          placeholder="계약번호 검색..."
+          placeholder="계약번호·출재사명·코드·설명 검색…"
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          className="w-56"
+          className="w-64"
         />
         <Select value={filterStatus} onValueChange={setFilterStatus}>
           <SelectTrigger className="w-32">
@@ -86,6 +112,12 @@ export default function ContractsPage() {
         </Select>
       </div>
 
+      {loadError && (
+        <div className="rounded border border-warning-urgent/40 bg-warning-urgent/10 px-4 py-3 text-sm text-warning-urgent">
+          {loadError}
+        </div>
+      )}
+
       {loading ? (
         <div className="p-8 text-center text-sm text-[var(--text-muted)] animate-pulse">로딩 중...</div>
       ) : (
@@ -95,6 +127,7 @@ export default function ContractsPage() {
               <TableHead>계약번호</TableHead>
               <TableHead>유형</TableHead>
               <TableHead>출재사</TableHead>
+              <TableHead>명세</TableHead>
               <TableHead>개시일</TableHead>
               <TableHead>만기일</TableHead>
               <TableHead>정산통화</TableHead>
@@ -103,7 +136,7 @@ export default function ContractsPage() {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {filtered.map((c) => (
+            {contracts.map((c) => (
               <TableRow key={c.id}>
                 <TableCell className="font-mono text-xs">{c.contract_no}</TableCell>
                 <TableCell>
@@ -112,8 +145,16 @@ export default function ContractsPage() {
                     {c.treaty_type && ` / ${c.treaty_type === 'proportional' ? 'Prop' : 'Non-Prop'}`}
                   </Badge>
                 </TableCell>
-                <TableCell className="text-xs text-[var(--text-secondary)]">
-                  {c.cedant_id.slice(0, 8)}
+                <TableCell className="text-sm text-[var(--text-primary)]">
+                  {c.cedant?.company_name_ko ?? `(${c.cedant_id.slice(0, 8)}…)`}
+                </TableCell>
+                <TableCell>
+                  <Button size="sm" variant="outline" asChild>
+                    <Link href={`/bordereau?contractId=${c.id}`}>
+                      <ClipboardList className="h-3.5 w-3.5 mr-1" />
+                      명세 입력
+                    </Link>
+                  </Button>
                 </TableCell>
                 <TableCell className="text-xs text-[var(--text-secondary)]">
                   {format(new Date(c.inception_date), 'yyyy-MM-dd')}
@@ -138,10 +179,12 @@ export default function ContractsPage() {
                 </TableCell>
               </TableRow>
             ))}
-            {filtered.length === 0 && (
+            {contracts.length === 0 && (
               <TableRow>
-                <TableCell colSpan={8} className="text-center text-[var(--text-muted)] py-8">
-                  계약 없음
+                <TableCell colSpan={9} className="text-center text-[var(--text-muted)] py-8">
+                  {filterCedantId || debouncedSearch || filterStatus !== 'all' || filterType !== 'all'
+                    ? '조건에 맞는 계약이 없습니다. 출재사·검색어·필터를 바꿔 보세요.'
+                    : '등록된 계약이 없습니다. 시드 SQL 적용 여부를 확인하거나 우측 상단에서 계약을 등록하세요.'}
                 </TableCell>
               </TableRow>
             )}

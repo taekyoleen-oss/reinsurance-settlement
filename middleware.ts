@@ -77,12 +77,15 @@ export async function middleware(request: NextRequest) {
     const brokerPaths = [
       '/dashboard',
       '/contracts',
+      '/bordereau',
       '/transactions',
       '/account-currents',
       '/settlements',
+      '/outstanding',
       '/reconciliation',
       '/reports',
       '/exchange-rates',
+      '/counterparties',
     ]
     const isBrokerPath = brokerPaths.some((p) => pathname.startsWith(p))
     if (isBrokerPath) {

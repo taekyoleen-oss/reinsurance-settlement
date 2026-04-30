@@ -11,7 +11,7 @@ export async function GET(req: NextRequest) {
     let query = db
       .from('rs_counterparties')
       .select('*')
-      .order('company_name', { ascending: true })
+      .order('company_name_ko', { ascending: true })
 
     if (company_type) query = query.eq('company_type', company_type)
 
@@ -32,11 +32,14 @@ export async function POST(req: NextRequest) {
     const db = supabase as any
     const body = await req.json()
 
-    if (!body.company_name) return NextResponse.json({ error: '회사명은 필수입니다.' }, { status: 400 })
+    if (!body.company_name_ko?.trim()) {
+      return NextResponse.json({ error: '회사명(한글)은 필수입니다.' }, { status: 400 })
+    }
 
+    const { created_by: _ignore, ...row } = body
     const { data, error } = await db
       .from('rs_counterparties')
-      .insert({ ...body, created_by: user.id })
+      .insert(row)
       .select()
       .single()
 

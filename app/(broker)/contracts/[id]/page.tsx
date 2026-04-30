@@ -10,9 +10,9 @@ import { Badge } from '@/components/ui/badge'
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from '@/components/ui/table'
-import { ArrowLeft, Plus, Trash2 } from 'lucide-react'
+import { ArrowLeft, ClipboardList, FileText, Layers, Plus } from 'lucide-react'
 import Link from 'next/link'
-import type { ContractRow } from '@/types'
+import type { ContractWithCedantRow } from '@/types'
 
 interface ShareRow {
   id: string
@@ -26,7 +26,7 @@ interface ShareRow {
 
 export default function ContractDetailPage() {
   const { id } = useParams<{ id: string }>()
-  const [contract, setContract] = useState<ContractRow | null>(null)
+  const [contract, setContract] = useState<ContractWithCedantRow | null>(null)
   const [shares, setShares] = useState<ShareRow[]>([])
   const [loading, setLoading] = useState(true)
 
@@ -54,15 +54,38 @@ export default function ContractDetailPage() {
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center gap-3">
+      <div className="flex flex-wrap items-center gap-2">
         <Link href="/contracts">
           <Button variant="ghost" size="sm">
             <ArrowLeft className="h-4 w-4 mr-1" />
             목록
           </Button>
         </Link>
-        <div className="flex-1">
+        <div className="min-w-0 flex-1 basis-full sm:basis-auto">
           <h1 className="text-xl font-bold text-[var(--text-primary)]">{contract.contract_no}</h1>
+          <p className="mt-0.5 text-[11px] text-[var(--text-muted)]">
+            이 계약 기준으로 명세 → 거래 → 정산서(SOA) 순으로 연결됩니다. 명세는 여러 행·기간이 가능합니다.
+          </p>
+        </div>
+        <div className="flex flex-wrap items-center gap-2">
+          <Button size="sm" variant="outline" asChild>
+            <Link href={`/bordereau?contractId=${contract.id}`}>
+              <ClipboardList className="h-3.5 w-3.5 mr-1" />
+              명세 입력
+            </Link>
+          </Button>
+          <Button size="sm" variant="outline" asChild>
+            <Link href={`/transactions/new?contractId=${contract.id}`}>
+              <FileText className="h-3.5 w-3.5 mr-1" />
+              거래 등록
+            </Link>
+          </Button>
+          <Button size="sm" variant="outline" asChild>
+            <Link href={`/account-currents/new?contractId=${contract.id}`}>
+              <Layers className="h-3.5 w-3.5 mr-1" />
+              정산서 생성
+            </Link>
+          </Button>
         </div>
         <Badge variant={STATUS_VARIANTS[contract.status] ?? 'default'}>
           {STATUS_LABELS[contract.status] ?? contract.status}
@@ -79,7 +102,11 @@ export default function ContractDetailPage() {
               {[
                 { label: '계약번호', value: contract.contract_no, mono: true },
                 { label: '계약 유형', value: `${TYPE_LABELS[contract.contract_type]}${contract.treaty_type ? ` / ${contract.treaty_type === 'proportional' ? '비례' : '비비례'}` : ''}` },
-                { label: '출재사 ID', value: contract.cedant_id.slice(0, 8) + '...', mono: true },
+                {
+                  label: '출재사',
+                  value: contract.cedant?.company_name_ko ?? contract.cedant_id,
+                  mono: !contract.cedant?.company_name_ko,
+                },
                 { label: '정산 통화', value: contract.settlement_currency, mono: true },
                 { label: '개시일', value: format(new Date(contract.inception_date), 'yyyy-MM-dd'), mono: true },
                 { label: '만기일', value: contract.expiry_date ? format(new Date(contract.expiry_date), 'yyyy-MM-dd') : '-', mono: true },

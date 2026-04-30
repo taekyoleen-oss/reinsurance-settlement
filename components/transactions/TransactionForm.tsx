@@ -9,8 +9,9 @@ import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { CurrencyAmountInput } from '@/components/shared/CurrencyAmountInput'
+import { CedantFilterSelect } from '@/components/contracts/CedantFilterSelect'
 import { TreatyAllocationPreview } from './TreatyAllocationPreview'
-import type { ContractRow, CounterpartyRow } from '@/types'
+import type { ContractWithCedantRow, CounterpartyRow } from '@/types'
 
 interface AllocationItem {
   reinsurer_id: string
@@ -22,15 +23,18 @@ interface AllocationItem {
 
 interface TransactionFormProps {
   initialContractId?: string
+  /** URL 등에서 미리 선택할 거래상대방 ID (`/api/counterparties` 기준) */
+  initialCounterpartyId?: string
 }
 
-export function TransactionForm({ initialContractId }: TransactionFormProps) {
+export function TransactionForm({ initialContractId, initialCounterpartyId }: TransactionFormProps) {
   const router = useRouter()
-  const [contracts, setContracts] = useState<ContractRow[]>([])
+  const [contracts, setContracts] = useState<ContractWithCedantRow[]>([])
   const [counterparties, setCounterparties] = useState<CounterpartyRow[]>([])
   const [allocations, setAllocations] = useState<AllocationItem[]>([])
   const [loading, setLoading] = useState(false)
   const [loadingAlloc, setLoadingAlloc] = useState(false)
+  const [filterCedantId, setFilterCedantId] = useState('')
 
   const [form, setForm] = useState({
     contract_id: initialContractId ?? '',
@@ -53,16 +57,44 @@ export function TransactionForm({ initialContractId }: TransactionFormProps) {
   const isTreaty = selectedContract?.contract_type === 'treaty'
 
   useEffect(() => {
-    fetch('/api/transactions?meta=contracts')
+    const params = new URLSearchParams()
+    if (filterCedantId) params.set('cedant_id', filterCedantId)
+    const q = params.toString()
+    fetch(q ? `/api/contracts?${q}` : '/api/contracts')
       .then((r) => r.json())
-      .then((d) => setContracts(d.contracts ?? d.data ?? d ?? []))
-      .catch(() => {})
+      .then((d) => setContracts(Array.isArray(d) ? d : (d.data ?? [])))
+      .catch(() => setContracts([]))
+  }, [filterCedantId])
 
+  useEffect(() => {
+    if (!form.contract_id || contracts.length === 0) return
+    if (!contracts.some((c) => c.id === form.contract_id)) {
+      setForm((p) => ({ ...p, contract_id: '' }))
+    }
+  }, [contracts, form.contract_id])
+
+  useEffect(() => {
     fetch('/api/counterparties')
       .then((r) => r.json())
       .then((d) => setCounterparties(Array.isArray(d) ? d : (d.data ?? [])))
       .catch(() => {})
   }, [])
+
+  useEffect(() => {
+    if (!initialCounterpartyId || counterparties.length === 0) return
+    if (!counterparties.some((c) => c.id === initialCounterpartyId)) return
+    setForm((p) =>
+      p.counterparty_id === initialCounterpartyId ? p : { ...p, counterparty_id: initialCounterpartyId }
+    )
+  }, [initialCounterpartyId, counterparties])
+
+  useEffect(() => {
+    const c = contracts.find((x) => x.id === form.contract_id)
+    if (!c?.settlement_currency) return
+    setForm((p) =>
+      p.currency === c.settlement_currency ? p : { ...p, currency: c.settlement_currency }
+    )
+  }, [form.contract_id, contracts])
 
   useEffect(() => {
     if (!isTreaty || isNonProp || !form.contract_id || !form.amount || parseFloat(form.amount) <= 0) {
@@ -148,6 +180,13 @@ export function TransactionForm({ initialContractId }: TransactionFormProps) {
           <CardTitle>거래 기본 정보</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
+          <div className="flex flex-wrap items-end gap-4">
+            <CedantFilterSelect
+              value={filterCedantId}
+              onChange={setFilterCedantId}
+              triggerClassName="h-9 w-[min(100%,14rem)]"
+            />
+          </div>
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-1.5">
               <Label>계약 *</Label>
@@ -159,6 +198,7 @@ export function TransactionForm({ initialContractId }: TransactionFormProps) {
                   {contracts.map((c) => (
                     <SelectItem key={c.id} value={c.id}>
                       {c.contract_no}
+                      {c.cedant?.company_name_ko ? ` · ${c.cedant.company_name_ko}` : ''}
                     </SelectItem>
                   ))}
                 </SelectContent>

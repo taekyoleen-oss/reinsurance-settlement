@@ -10,6 +10,7 @@ export async function GET(req: NextRequest) {
     const { searchParams } = new URL(req.url)
     const filters = {
       contractId: searchParams.get('contractId') ?? undefined,
+      cedantId: searchParams.get('cedant_id')?.trim() || undefined,
       counterpartyId: searchParams.get('counterpartyId') ?? undefined,
       status: searchParams.get('status') ?? undefined,
       periodType: searchParams.get('periodType') ?? undefined,

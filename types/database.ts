@@ -39,7 +39,12 @@ export type ContractType = 'treaty' | 'facultative'
 export type TreatyType = 'proportional' | 'non_proportional'
 export type ClassOfBusiness = 'fire' | 'marine' | 'liability' | 'engineering' | 'misc'
 export type ContractStatus = 'active' | 'expired' | 'cancelled'
-export type CompanyType = 'cedant' | 'reinsurer' | 'both'
+export type CompanyType = 'cedant' | 'reinsurer' | 'both' | 'broker'
+export type UnderwritingBasis = 'UY' | 'clean_cut'
+export type ReserveReleaseTiming = 'next_period' | 'period_after_next'
+export type BordereauEntryType = 'new' | 'cancel' | 'refund' | 'adjustment'
+export type LossStatus = 'in_progress' | 'paid' | 'closed' | 'denied'
+export type ValidationStatus = 'pending' | 'valid' | 'error' | 'warning'
 export type ACDirection = 'to_cedant' | 'to_reinsurer'
 export type SettlementType = 'receipt' | 'payment'
 export type MatchStatus = 'unmatched' | 'partial' | 'fully_matched'
@@ -149,9 +154,30 @@ export interface ContractRow {
   settlement_period: PeriodType
   status: ContractStatus
   description: string | null
+  // v1.4 추가 컬럼
+  broker_id: string | null
+  underwriting_basis: UnderwritingBasis | null
+  ceding_commission_rate: number | null
+  profit_commission_rate: number | null
+  brokerage_rate: number | null
+  premium_reserve_rate: number | null
+  loss_reserve_rate: number | null
+  interest_rate: number | null
+  reserve_release_timing: ReserveReleaseTiming | null
+  payment_due_days: number | null
+  confirmation_due_days: number | null
+  offset_allowed: boolean
+  cash_loss_threshold: number | null
   created_by: string
   created_at: string
   updated_at: string
+}
+
+/** 목록/상세 API에서 rs_counterparties(cedant) 조인 시 */
+export type ContractCedantSummary = Pick<CounterpartyRow, 'company_name_ko' | 'company_code'>
+
+export interface ContractWithCedantRow extends ContractRow {
+  cedant?: ContractCedantSummary | null
 }
 
 export interface ContractInsert {
@@ -167,6 +193,19 @@ export interface ContractInsert {
   settlement_period: PeriodType
   status?: ContractStatus
   description?: string | null
+  broker_id?: string | null
+  underwriting_basis?: UnderwritingBasis | null
+  ceding_commission_rate?: number | null
+  profit_commission_rate?: number | null
+  brokerage_rate?: number | null
+  premium_reserve_rate?: number | null
+  loss_reserve_rate?: number | null
+  interest_rate?: number | null
+  reserve_release_timing?: ReserveReleaseTiming | null
+  payment_due_days?: number | null
+  confirmation_due_days?: number | null
+  offset_allowed?: boolean
+  cash_loss_threshold?: number | null
   created_by: string
   created_at?: string
   updated_at?: string
@@ -184,6 +223,19 @@ export interface ContractUpdate {
   settlement_period?: PeriodType
   status?: ContractStatus
   description?: string | null
+  broker_id?: string | null
+  underwriting_basis?: UnderwritingBasis | null
+  ceding_commission_rate?: number | null
+  profit_commission_rate?: number | null
+  brokerage_rate?: number | null
+  premium_reserve_rate?: number | null
+  loss_reserve_rate?: number | null
+  interest_rate?: number | null
+  reserve_release_timing?: ReserveReleaseTiming | null
+  payment_due_days?: number | null
+  confirmation_due_days?: number | null
+  offset_allowed?: boolean
+  cash_loss_threshold?: number | null
   updated_at?: string
 }
 
@@ -752,6 +804,18 @@ export interface Database {
         Update: Partial<ShareTokenLogInsert>
         Relationships: []
       }
+      rs_premium_bordereau: {
+        Row: PremiumBordereauRow
+        Insert: PremiumBordereauInsert
+        Update: PremiumBordereauUpdate
+        Relationships: []
+      }
+      rs_loss_bordereau: {
+        Row: LossBordereauRow
+        Insert: LossBordereauInsert
+        Update: LossBordereauUpdate
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
@@ -766,4 +830,139 @@ export interface Database {
       [_ in never]: never
     }
   }
+}
+
+// ─────────────────────────────────────────────
+// rs_premium_bordereau — 보험료 라인 명세 (v1.4)
+// ─────────────────────────────────────────────
+
+export interface PremiumBordereauRow {
+  id: string
+  contract_id: string
+  transaction_id: string | null
+  period_yyyyqn: string
+  policy_no: string
+  insured_name: string | null
+  risk_period_from: string
+  risk_period_to: string
+  sum_insured: number
+  original_premium: number
+  cession_pct: number
+  ceded_premium: number
+  entry_type: BordereauEntryType
+  currency: string
+  validation_status: ValidationStatus
+  validation_messages: Record<string, unknown>[] | null
+  created_by: string | null
+  created_at: string
+  updated_at: string
+}
+
+export interface PremiumBordereauInsert {
+  id?: string
+  contract_id: string
+  transaction_id?: string | null
+  period_yyyyqn: string
+  policy_no: string
+  insured_name?: string | null
+  risk_period_from: string
+  risk_period_to: string
+  sum_insured: number
+  original_premium: number
+  cession_pct: number
+  ceded_premium: number
+  entry_type?: BordereauEntryType
+  currency: string
+  validation_status?: ValidationStatus
+  validation_messages?: Record<string, unknown>[] | null
+  created_by?: string | null
+  created_at?: string
+  updated_at?: string
+}
+
+export interface PremiumBordereauUpdate {
+  transaction_id?: string | null
+  period_yyyyqn?: string
+  policy_no?: string
+  insured_name?: string | null
+  risk_period_from?: string
+  risk_period_to?: string
+  sum_insured?: number
+  original_premium?: number
+  cession_pct?: number
+  ceded_premium?: number
+  entry_type?: BordereauEntryType
+  currency?: string
+  validation_status?: ValidationStatus
+  validation_messages?: Record<string, unknown>[] | null
+  updated_at?: string
+}
+
+// ─────────────────────────────────────────────
+// rs_loss_bordereau — 손해 라인 명세 (v1.4)
+// ─────────────────────────────────────────────
+
+export interface LossBordereauRow {
+  id: string
+  contract_id: string
+  transaction_id: string | null
+  premium_bordereau_id: string | null
+  period_yyyyqn: string
+  claim_no: string
+  loss_date: string
+  report_date: string | null
+  paid_amount: number
+  os_reserve: number
+  cession_pct: number
+  recoverable_amount: number
+  is_cash_loss: boolean
+  loss_status: LossStatus
+  currency: string
+  validation_status: ValidationStatus
+  validation_messages: Record<string, unknown>[] | null
+  created_by: string | null
+  created_at: string
+  updated_at: string
+}
+
+export interface LossBordereauInsert {
+  id?: string
+  contract_id: string
+  transaction_id?: string | null
+  premium_bordereau_id?: string | null
+  period_yyyyqn: string
+  claim_no: string
+  loss_date: string
+  report_date?: string | null
+  paid_amount?: number
+  os_reserve?: number
+  cession_pct: number
+  recoverable_amount?: number
+  is_cash_loss?: boolean
+  loss_status?: LossStatus
+  currency: string
+  validation_status?: ValidationStatus
+  validation_messages?: Record<string, unknown>[] | null
+  created_by?: string | null
+  created_at?: string
+  updated_at?: string
+}
+
+export interface LossBordereauUpdate {
+  transaction_id?: string | null
+  premium_bordereau_id?: string | null
+  period_yyyyqn?: string
+  claim_no?: string
+  loss_date?: string
+  report_date?: string | null
+  paid_amount?: number
+  os_reserve?: number
+  cession_pct?: number
+  recoverable_amount?: number
+  is_cash_loss?: boolean
+  loss_status?: LossStatus
+  currency?: string
+  validation_status?: ValidationStatus
+  validation_messages?: Record<string, unknown>[] | null
+  updated_at?: string
 }

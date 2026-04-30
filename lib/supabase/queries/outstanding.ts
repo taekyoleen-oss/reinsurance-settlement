@@ -12,25 +12,31 @@ import {
  */
 export async function getOutstandingByCounterparty(
   counterpartyId?: string,
-  currencyCode?: string
+  currencyCode?: string,
+  contractId?: string,
+  cedantId?: string
 ): Promise<OutstandingResult[]> {
-  return calculateOutstanding(counterpartyId, currencyCode)
+  return calculateOutstanding(counterpartyId, currencyCode, contractId, cedantId)
 }
 
 /**
  * Aging 분석 데이터 조회
  */
 export async function getAgingData(
-  counterpartyId?: string
+  counterpartyId?: string,
+  contractId?: string,
+  cedantId?: string
 ): Promise<AgingResult[]> {
-  return getAgingAnalysis(counterpartyId)
+  return getAgingAnalysis(counterpartyId, contractId, cedantId)
 }
 
 export async function getOutstandingDetailData(
   counterpartyId?: string,
-  currencyCode?: string
+  currencyCode?: string,
+  contractId?: string,
+  cedantId?: string
 ): Promise<OutstandingDetailItem[]> {
-  return getOutstandingDetail(counterpartyId, currencyCode)
+  return getOutstandingDetail(counterpartyId, currencyCode, contractId, cedantId)
 }
 
 export type { OutstandingResult, AgingResult, OutstandingDetailItem }

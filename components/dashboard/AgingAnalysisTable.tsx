@@ -26,20 +26,52 @@ function fmt(n: number) {
   return new Intl.NumberFormat('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(n)
 }
 
-export function AgingAnalysisTable() {
+export interface OutstandingScopeProps {
+  counterpartyId?: string
+  contractId?: string
+  cedantId?: string
+}
+
+export function AgingAnalysisTable({
+  counterpartyId,
+  contractId,
+  cedantId,
+}: OutstandingScopeProps = {}) {
   const [rows, setRows] = useState<AgingRow[]>([])
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    fetch('/api/outstanding?type=aging')
-      .then((r) => r.json())
+    let cancelled = false
+    setLoading(true)
+    setRows([])
+
+    const p = new URLSearchParams()
+    p.set('type', 'aging')
+    if (counterpartyId) p.set('counterpartyId', counterpartyId)
+    if (contractId) p.set('contractId', contractId)
+    if (cedantId) p.set('cedant_id', cedantId)
+
+    fetch(`/api/outstanding?${p}`, { cache: 'no-store' })
+      .then((r) => {
+        if (!r.ok) throw new Error(String(r.status))
+        return r.json()
+      })
       .then((d) => {
+        if (cancelled) return
         const raw = Array.isArray(d) ? d : (d.aging ?? d.data ?? [])
         setRows(raw)
       })
-      .catch(() => {})
-      .finally(() => setLoading(false))
-  }, [])
+      .catch(() => {
+        if (!cancelled) setRows([])
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false)
+      })
+
+    return () => {
+      cancelled = true
+    }
+  }, [counterpartyId, contractId, cedantId])
 
   return (
     <Card>

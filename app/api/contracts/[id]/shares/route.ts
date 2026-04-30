@@ -13,7 +13,7 @@ export async function GET(
       .select(`
         id, reinsurer_id, signed_line, order_of_priority,
         effective_from, effective_to,
-        rs_counterparties!reinsurer_id (company_name)
+        rs_counterparties!reinsurer_id (company_name_ko)
       `)
       .eq('contract_id', id)
       .order('order_of_priority', { ascending: true })
@@ -23,7 +23,7 @@ export async function GET(
     const shares = (data ?? []).map((s: any) => ({
       id: s.id,
       reinsurer_id: s.reinsurer_id,
-      reinsurer_name: s.rs_counterparties?.company_name,
+      reinsurer_name: s.rs_counterparties?.company_name_ko,
       signed_line: s.signed_line,
       order_of_priority: s.order_of_priority,
       effective_from: s.effective_from,

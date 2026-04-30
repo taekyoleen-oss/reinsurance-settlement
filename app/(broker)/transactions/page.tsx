@@ -1,18 +1,20 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
 import { format } from 'date-fns'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { Label } from '@/components/ui/label'
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from '@/components/ui/table'
 import { Badge } from '@/components/ui/badge'
 import { StatusBadge } from '@/components/shared/StatusBadge'
+import { CedantFilterSelect } from '@/components/contracts/CedantFilterSelect'
 import { Plus } from 'lucide-react'
-import type { TransactionRow } from '@/types'
+import type { ContractWithCedantRow, CounterpartyRow, TransactionRow } from '@/types'
 
 const TX_TYPE_LABELS: Record<string, string> = {
   premium: '보험료',
@@ -29,28 +31,65 @@ const DIR_LABELS: Record<string, string> = {
 
 export default function TransactionsPage() {
   const [transactions, setTransactions] = useState<TransactionRow[]>([])
+  const [contracts, setContracts] = useState<ContractWithCedantRow[]>([])
+  const [counterparties, setCounterparties] = useState<CounterpartyRow[]>([])
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
+  const [filterCedantId, setFilterCedantId] = useState('')
+  const [filterContractId, setFilterContractId] = useState('all')
+  const [filterCounterpartyId, setFilterCounterpartyId] = useState('all')
+  const [dateFrom, setDateFrom] = useState('')
+  const [dateTo, setDateTo] = useState('')
   const [filterStatus, setFilterStatus] = useState('all')
   const [filterType, setFilterType] = useState('all')
 
   useEffect(() => {
+    fetch('/api/contracts')
+      .then((r) => r.json())
+      .then((d) => setContracts(Array.isArray(d) ? d : (d.data ?? [])))
+      .catch(() => setContracts([]))
+
+    fetch('/api/counterparties')
+      .then((r) => r.json())
+      .then((d) => setCounterparties(Array.isArray(d) ? d : (d.data ?? [])))
+      .catch(() => setCounterparties([]))
+  }, [])
+
+  const contractsForSelect = useMemo(
+    () => contracts.filter((c) => !filterCedantId || c.cedant_id === filterCedantId),
+    [contracts, filterCedantId]
+  )
+
+  useEffect(() => {
+    if (filterContractId !== 'all' && !contractsForSelect.some((c) => c.id === filterContractId)) {
+      setFilterContractId('all')
+    }
+  }, [contractsForSelect, filterContractId])
+
+  useEffect(() => {
     const params = new URLSearchParams()
     if (filterStatus !== 'all') params.set('status', filterStatus)
-    if (filterType !== 'all') params.set('transaction_type', filterType)
+    if (filterType !== 'all') params.set('transactionType', filterType)
+    if (filterContractId !== 'all') params.set('contractId', filterContractId)
+    if (filterCounterpartyId !== 'all') params.set('counterpartyId', filterCounterpartyId)
+    if (dateFrom) params.set('dateFrom', dateFrom)
+    if (dateTo) params.set('dateTo', dateTo)
 
     setLoading(true)
-    fetch(`/api/transactions?${params}`)
+    const qs = params.toString()
+    fetch(qs ? `/api/transactions?${qs}` : '/api/transactions')
       .then((r) => r.json())
       .then((d) => setTransactions(Array.isArray(d) ? d : (d.data ?? [])))
       .catch(() => {})
       .finally(() => setLoading(false))
-  }, [filterStatus, filterType])
+  }, [filterStatus, filterType, filterContractId, filterCounterpartyId, dateFrom, dateTo])
 
   const filtered = transactions.filter((tx) =>
     !search ||
     tx.description?.toLowerCase().includes(search.toLowerCase()) ||
-    tx.id.toLowerCase().includes(search.toLowerCase())
+    tx.id.toLowerCase().includes(search.toLowerCase()) ||
+    contracts.find((c) => c.id === tx.contract_id)?.contract_no.toLowerCase().includes(search.toLowerCase()) ||
+    counterparties.find((cp) => cp.id === tx.counterparty_id)?.company_name_ko.toLowerCase().includes(search.toLowerCase())
   )
 
   return (
@@ -68,7 +107,52 @@ export default function TransactionsPage() {
         </Link>
       </div>
 
-      <div className="flex flex-wrap gap-3">
+      <div className="flex flex-wrap items-end gap-3">
+        <CedantFilterSelect
+          value={filterCedantId}
+          onChange={setFilterCedantId}
+          triggerClassName="h-9 w-[min(100%,14rem)]"
+        />
+        <div className="flex min-w-[220px] flex-col gap-1.5">
+          <Label className="text-[10px] font-medium uppercase text-[var(--text-muted)]">특약/계약</Label>
+          <Select value={filterContractId} onValueChange={setFilterContractId}>
+            <SelectTrigger className="h-9">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">전체 계약</SelectItem>
+              {contractsForSelect.map((c) => (
+                <SelectItem key={c.id} value={c.id}>
+                  {c.contract_no} · {c.cedant?.company_name_ko ?? '출재사'}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+        <div className="flex min-w-[180px] flex-col gap-1.5">
+          <Label className="text-[10px] font-medium uppercase text-[var(--text-muted)]">회사(거래상대방)</Label>
+          <Select value={filterCounterpartyId} onValueChange={setFilterCounterpartyId}>
+            <SelectTrigger className="h-9">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">전체 회사</SelectItem>
+              {counterparties.map((cp) => (
+                <SelectItem key={cp.id} value={cp.id}>
+                  {cp.company_name_ko}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+        <div className="flex flex-col gap-1.5">
+          <Label className="text-[10px] font-medium uppercase text-[var(--text-muted)]">시작일</Label>
+          <Input type="date" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)} className="h-9 w-40" />
+        </div>
+        <div className="flex flex-col gap-1.5">
+          <Label className="text-[10px] font-medium uppercase text-[var(--text-muted)]">종료일</Label>
+          <Input type="date" value={dateTo} onChange={(e) => setDateTo(e.target.value)} className="h-9 w-40" />
+        </div>
         <Input
           placeholder="설명 또는 ID 검색..."
           value={search}
@@ -109,6 +193,8 @@ export default function TransactionsPage() {
           <TableHeader>
             <TableRow>
               <TableHead>거래일</TableHead>
+              <TableHead>특약/계약</TableHead>
+              <TableHead>회사</TableHead>
               <TableHead>유형</TableHead>
               <TableHead>방향</TableHead>
               <TableHead className="text-right">원화금액</TableHead>
@@ -124,6 +210,12 @@ export default function TransactionsPage() {
               <TableRow key={tx.id} className={tx.is_allocation_parent ? 'opacity-50' : ''}>
                 <TableCell className="text-xs font-mono text-[var(--text-secondary)]">
                   {format(new Date(tx.transaction_date), 'yyyy-MM-dd')}
+                </TableCell>
+                <TableCell className="text-xs">
+                  {contracts.find((c) => c.id === tx.contract_id)?.contract_no ?? tx.contract_id.slice(0, 8)}
+                </TableCell>
+                <TableCell className="text-xs">
+                  {counterparties.find((cp) => cp.id === tx.counterparty_id)?.company_name_ko ?? tx.counterparty_id.slice(0, 8)}
                 </TableCell>
                 <TableCell>
                   <Badge variant="default" className="text-xs">
@@ -157,7 +249,7 @@ export default function TransactionsPage() {
             ))}
             {filtered.length === 0 && (
               <TableRow>
-                <TableCell colSpan={9} className="text-center text-[var(--text-muted)] py-8">
+                <TableCell colSpan={11} className="text-center text-[var(--text-muted)] py-8">
                   거래 내역 없음
                 </TableCell>
               </TableRow>

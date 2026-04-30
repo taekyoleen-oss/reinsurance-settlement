@@ -28,12 +28,21 @@ export async function GET(
       case 'outstanding': {
         const counterpartyId = searchParams.get('counterpartyId') ?? undefined
         const currencyCode = searchParams.get('currencyCode') ?? undefined
-        data = await getOutstandingByCounterparty(counterpartyId, currencyCode)
+        const contractId = searchParams.get('contractId') ?? undefined
+        const cedantId = searchParams.get('cedant_id')?.trim() || undefined
+        data = await getOutstandingByCounterparty(
+          counterpartyId,
+          currencyCode,
+          contractId,
+          cedantId
+        )
         break
       }
       case 'aging': {
         const counterpartyId = searchParams.get('counterpartyId') ?? undefined
-        data = await getAgingData(counterpartyId)
+        const contractId = searchParams.get('contractId') ?? undefined
+        const cedantId = searchParams.get('cedant_id')?.trim() || undefined
+        data = await getAgingData(counterpartyId, contractId, cedantId)
         break
       }
       case 'account-currents': {

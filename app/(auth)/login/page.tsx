@@ -38,7 +38,7 @@ export default function LoginPage() {
       <div className="w-full max-w-sm space-y-6">
         <div className="text-center">
           <div className="inline-flex h-12 w-12 items-center justify-center rounded-xl bg-primary mb-4">
-            <span className="text-base font-bold text-[#0F1117]">RS</span>
+            <span className="text-base font-bold text-primary-foreground">RS</span>
           </div>
           <h1 className="text-xl font-bold text-[var(--text-primary)]">재보험 정청산 시스템</h1>
           <p className="text-sm text-[var(--text-muted)] mt-1">Reinsurance Settlement System</p>

@@ -20,11 +20,18 @@ export type {
   RateType,
   TokenTargetType,
   TokenAction,
+  UnderwritingBasis,
+  ReserveReleaseTiming,
+  BordereauEntryType,
+  LossStatus,
+  ValidationStatus,
 
   // Row 타입
   CurrencyRow,
   CounterpartyRow,
   ContractRow,
+  ContractWithCedantRow,
+  ContractCedantSummary,
   ContractShareRow,
   UserProfileRow,
   ExchangeRateRow,
@@ -36,6 +43,8 @@ export type {
   ReconciliationItemRow,
   ShareTokenRow,
   ShareTokenLogRow,
+  PremiumBordereauRow,
+  LossBordereauRow,
 
   // Insert 타입
   CurrencyInsert,
@@ -52,6 +61,8 @@ export type {
   ReconciliationItemInsert,
   ShareTokenInsert,
   ShareTokenLogInsert,
+  PremiumBordereauInsert,
+  LossBordereauInsert,
 
   // Update 타입
   CurrencyUpdate,
@@ -64,6 +75,8 @@ export type {
   AccountCurrentUpdate,
   ReconciliationItemUpdate,
   ShareTokenUpdate,
+  PremiumBordereauUpdate,
+  LossBordereauUpdate,
 
   // Database 타입 맵
   Database,
@@ -81,6 +94,8 @@ import type {
   SettlementRow,
   ContractShareRow,
   ReconciliationItemRow,
+  PremiumBordereauRow,
+  LossBordereauRow,
 } from './database'
 
 /** 거래 + 계약/거래상대방 조인 */
@@ -116,6 +131,7 @@ export interface ReconciliationItemWithRelations extends ReconciliationItemRow {
 /** AC 목록 필터 */
 export interface ACFilters {
   contractId?: string
+  cedantId?: string
   counterpartyId?: string
   status?: string
   periodType?: string
@@ -142,4 +158,38 @@ export interface ApiResponse<T> {
 export interface ApiError {
   error: string
   code?: string
+}
+
+// ─────────────────────────────────────────────
+// Bordereau 복합 타입 (v1.4)
+// ─────────────────────────────────────────────
+
+/** 보험료 명세 + 계약 조인 */
+export interface PremiumBordereauWithContract extends PremiumBordereauRow {
+  contract?: ContractRow
+}
+
+/** 손해 명세 + 계약 + 보험료 명세 조인 */
+export interface LossBordereauWithRelations extends LossBordereauRow {
+  contract?: ContractRow
+  premium_bordereau?: PremiumBordereauRow | null
+}
+
+/** Bordereau CSV 업로드 한 행의 파싱 결과 */
+export interface BordereauCsvRow {
+  rowIndex: number
+  raw: Record<string, string>
+  parsed: Partial<PremiumBordereauRow | LossBordereauRow>
+  errors: string[]
+  warnings: string[]
+}
+
+/** Bordereau 목록 필터 */
+export interface BordereauFilters {
+  contractId?: string
+  periodYyyyqn?: string
+  validationStatus?: string
+  entryType?: string
+  dateFrom?: string
+  dateTo?: string
 }

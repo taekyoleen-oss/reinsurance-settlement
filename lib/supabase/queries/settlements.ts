@@ -1,5 +1,6 @@
 import { createClient } from '@/lib/supabase/server'
 import type { SettlementRow, SettlementInsert, SettlementMatchRow } from '@/types/database'
+import { validateExchangeRate } from '@/lib/utils/exchange-rate'
 
 export interface SettlementFilters {
   counterpartyId?: string
@@ -59,10 +60,28 @@ export async function createSettlement(
   const supabase = await createClient()
   const db = supabase as any
 
+  const settlementDate = new Date(data.settlement_date)
+  const amount = Number(data.amount)
+  const rate =
+    data.exchange_rate != null && Number(data.exchange_rate) > 0
+      ? Number(data.exchange_rate)
+      : await validateExchangeRate(data.currency_code, settlementDate)
+  const amount_krw =
+    data.currency_code === 'KRW' ? amount : Math.round(amount * rate)
+
   const { data: settlement, error } = await db
     .from('rs_settlements')
     .insert({
-      ...data,
+      settlement_type: data.settlement_type,
+      counterparty_id: data.counterparty_id,
+      amount,
+      currency_code: data.currency_code,
+      exchange_rate: rate,
+      amount_krw,
+      settlement_date: data.settlement_date,
+      bank_reference: data.bank_reference ?? null,
+      notes: data.notes ?? null,
+      created_by: data.created_by,
       match_status: 'unmatched',
       matched_amount: 0,
     })

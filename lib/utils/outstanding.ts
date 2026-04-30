@@ -2,6 +2,37 @@ import { adminClient } from '@/lib/supabase/admin'
 
 export type AgingBucket = 'current' | '1-30' | '31-60' | '61-90' | '90+'
 
+type ContractScope =
+  | { kind: 'all' }
+  | { kind: 'empty' }
+  | { kind: 'eq'; contractId: string }
+  | { kind: 'in'; contractIds: string[] }
+
+async function resolveContractScope(
+  db: any,
+  contractId?: string,
+  cedantId?: string
+): Promise<ContractScope> {
+  if (contractId && cedantId) {
+    const { data: c } = await db
+      .from('rs_contracts')
+      .select('cedant_id')
+      .eq('id', contractId)
+      .maybeSingle()
+    const row = c as { cedant_id: string } | null
+    if (!row || row.cedant_id !== cedantId) return { kind: 'empty' }
+    return { kind: 'eq', contractId }
+  }
+  if (contractId) return { kind: 'eq', contractId }
+  if (cedantId) {
+    const { data: crs } = await db.from('rs_contracts').select('id').eq('cedant_id', cedantId)
+    const ids = ((crs ?? []) as { id: string }[]).map((r) => r.id)
+    if (ids.length === 0) return { kind: 'empty' }
+    return { kind: 'in', contractIds: ids }
+  }
+  return { kind: 'all' }
+}
+
 /** OutstandingKPICard 컴포넌트가 기대하는 형태 */
 export interface OutstandingResult {
   currency: string
@@ -40,9 +71,14 @@ export interface OutstandingDetailItem {
  */
 export async function getOutstandingDetail(
   counterpartyId?: string,
-  currencyCode?: string
+  currencyCode?: string,
+  contractId?: string,
+  cedantId?: string
 ): Promise<OutstandingDetailItem[]> {
   const db = adminClient as any
+
+  const scope = await resolveContractScope(db, contractId, cedantId)
+  if (scope.kind === 'empty') return []
 
   let query = db
     .from('rs_transactions')
@@ -60,6 +96,9 @@ export async function getOutstandingDetail(
     .eq('is_deleted', false)
     .in('status', ['confirmed', 'billed'])
     .order('due_date', { ascending: true, nullsFirst: false })
+
+  if (scope.kind === 'eq') query = query.eq('contract_id', scope.contractId)
+  if (scope.kind === 'in') query = query.in('contract_id', scope.contractIds)
 
   if (counterpartyId) query = query.eq('counterparty_id', counterpartyId)
   if (currencyCode)   query = query.eq('currency_code', currencyCode)
@@ -90,9 +129,14 @@ export async function getOutstandingDetail(
  */
 export async function calculateOutstanding(
   counterpartyId?: string,
-  currencyCode?: string
+  currencyCode?: string,
+  contractId?: string,
+  cedantId?: string
 ): Promise<OutstandingResult[]> {
   const db = adminClient as any
+
+  const scope = await resolveContractScope(db, contractId, cedantId)
+  if (scope.kind === 'empty') return []
 
   let query = db
     .from('rs_transactions')
@@ -100,6 +144,9 @@ export async function calculateOutstanding(
     .eq('is_allocation_parent', false)
     .eq('is_deleted', false)
     .in('status', ['confirmed', 'billed'])
+
+  if (scope.kind === 'eq') query = query.eq('contract_id', scope.contractId)
+  if (scope.kind === 'in') query = query.in('contract_id', scope.contractIds)
 
   if (counterpartyId) query = query.eq('counterparty_id', counterpartyId)
   if (currencyCode)   query = query.eq('currency_code', currencyCode)
@@ -154,9 +201,14 @@ export function classifyAging(dueDate: Date | null): AgingBucket {
  * AgingAnalysisTable 컴포넌트 형태에 맞춰 반환
  */
 export async function getAgingAnalysis(
-  counterpartyId?: string
+  counterpartyId?: string,
+  contractId?: string,
+  cedantId?: string
 ): Promise<AgingResult[]> {
   const db = adminClient as any
+
+  const scope = await resolveContractScope(db, contractId, cedantId)
+  if (scope.kind === 'empty') return []
 
   let query = db
     .from('rs_transactions')
@@ -171,6 +223,9 @@ export async function getAgingAnalysis(
     .eq('is_allocation_parent', false)
     .eq('is_deleted', false)
     .in('status', ['confirmed', 'billed'])
+
+  if (scope.kind === 'eq') query = query.eq('contract_id', scope.contractId)
+  if (scope.kind === 'in') query = query.in('contract_id', scope.contractIds)
 
   if (counterpartyId) query = query.eq('counterparty_id', counterpartyId)
 

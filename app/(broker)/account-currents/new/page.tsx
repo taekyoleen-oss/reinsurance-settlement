@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
@@ -8,6 +8,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { CedantFilterSelect } from '@/components/contracts/CedantFilterSelect'
 import { DuplicateACWarningBanner } from '@/components/shared/DuplicateACWarningBanner'
 import { ArrowLeft, FileText } from 'lucide-react'
 import Link from 'next/link'
@@ -19,6 +20,7 @@ export default function NewAccountCurrentPage() {
   const [counterparties, setCounterparties] = useState<CounterpartyRow[]>([])
   const [loading, setLoading] = useState(false)
   const [duplicateWarning, setDuplicateWarning] = useState(false)
+  const [filterCedantId, setFilterCedantId] = useState('')
 
   const [form, setForm] = useState({
     contract_id: '',
@@ -39,6 +41,36 @@ export default function NewAccountCurrentPage() {
       setCounterparties(Array.isArray(cpd) ? cpd : (cpd.data ?? []))
     }).catch(() => {})
   }, [])
+
+  const contractsForSelect = useMemo(
+    () => contracts.filter((c) => !filterCedantId || c.cedant_id === filterCedantId),
+    [contracts, filterCedantId]
+  )
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+    const id = new URLSearchParams(window.location.search).get('contractId')
+    if (id) {
+      setForm((f) => (f.contract_id === id ? f : { ...f, contract_id: id }))
+    }
+  }, [])
+
+  useEffect(() => {
+    if (!form.contract_id || contracts.length === 0) return
+    if (!contractsForSelect.some((c) => c.id === form.contract_id)) {
+      setForm((f) => ({ ...f, contract_id: '' }))
+    }
+  }, [contractsForSelect, form.contract_id, contracts.length])
+
+  useEffect(() => {
+    const c = contracts.find((x) => x.id === form.contract_id)
+    if (!c?.settlement_currency) return
+    setForm((f) =>
+      f.settlement_currency === c.settlement_currency
+        ? f
+        : { ...f, settlement_currency: c.settlement_currency }
+    )
+  }, [form.contract_id, contracts])
 
   // 기간 중복 체크
   useEffect(() => {
@@ -133,6 +165,13 @@ export default function NewAccountCurrentPage() {
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4">
+            <div className="flex flex-wrap items-end gap-4">
+              <CedantFilterSelect
+                value={filterCedantId}
+                onChange={setFilterCedantId}
+                triggerClassName="h-9 w-[min(100%,14rem)]"
+              />
+            </div>
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-1.5">
                 <Label>계약 *</Label>
@@ -144,7 +183,7 @@ export default function NewAccountCurrentPage() {
                     <SelectValue placeholder="계약 선택..." />
                   </SelectTrigger>
                   <SelectContent>
-                    {contracts.map((c) => (
+                    {contractsForSelect.map((c) => (
                       <SelectItem key={c.id} value={c.id}>
                         {c.contract_no} ({c.contract_type})
                       </SelectItem>

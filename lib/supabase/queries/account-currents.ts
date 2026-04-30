@@ -12,6 +12,8 @@ import {
 
 export interface ACFilters {
   contractId?: string
+  /** 출재사(cedant) — 해당 출재사 소속 계약의 정산서만 (contractId 미지정 시) */
+  cedantId?: string
   counterpartyId?: string
   status?: string
   periodType?: string
@@ -26,6 +28,30 @@ export async function getAccountCurrents(
   filters: ACFilters = {}
 ): Promise<AccountCurrentRow[]> {
   const supabase = await createClient()
+  const db = supabase as any
+
+  let contractIdsForCedant: string[] | null = null
+  if (filters.cedantId && !filters.contractId) {
+    const { data: crs, error: cErr } = await db
+      .from('rs_contracts')
+      .select('id')
+      .eq('cedant_id', filters.cedantId)
+    if (cErr) throw cErr
+    const ids = ((crs ?? []) as { id: string }[]).map((r) => r.id)
+    if (ids.length === 0) return []
+    contractIdsForCedant = ids
+  }
+
+  if (filters.contractId && filters.cedantId) {
+    const { data: c, error: oneErr } = await db
+      .from('rs_contracts')
+      .select('cedant_id')
+      .eq('id', filters.contractId)
+      .maybeSingle()
+    if (oneErr) throw oneErr
+    const row = c as { cedant_id: string } | null
+    if (!row || row.cedant_id !== filters.cedantId) return []
+  }
 
   let query = supabase
     .from('rs_account_currents')
@@ -33,6 +59,7 @@ export async function getAccountCurrents(
     .order('period_from', { ascending: false })
 
   if (filters.contractId) query = query.eq('contract_id', filters.contractId)
+  else if (contractIdsForCedant) query = query.in('contract_id', contractIdsForCedant)
   if (filters.counterpartyId)
     query = query.eq('counterparty_id', filters.counterpartyId)
   if (filters.status) query = query.eq('status', filters.status)

@@ -50,6 +50,48 @@ $$;
 
 COMMENT ON FUNCTION get_user_company_id() IS '현재 로그인 사용자의 소속 거래처 ID 반환. 브로커 내부 직원이면 NULL';
 
+-- RLS 상호 참조 방지 (contracts ↔ contract_shares, user_profiles)
+CREATE OR REPLACE FUNCTION public.fn_contract_cedant_id(p_contract_id uuid)
+RETURNS uuid
+LANGUAGE sql
+SECURITY DEFINER
+SET search_path = public
+STABLE
+AS $$
+    SELECT c.cedant_id FROM rs_contracts c WHERE c.id = p_contract_id LIMIT 1
+$$;
+
+CREATE OR REPLACE FUNCTION public.fn_contract_has_reinsurer(p_contract_id uuid, p_reinsurer_id uuid)
+RETURNS boolean
+LANGUAGE sql
+SECURITY DEFINER
+SET search_path = public
+STABLE
+AS $$
+    SELECT EXISTS (
+        SELECT 1 FROM rs_contract_shares cs
+        WHERE cs.contract_id = p_contract_id AND cs.reinsurer_id = p_reinsurer_id
+    )
+$$;
+
+CREATE OR REPLACE FUNCTION public.fn_is_broker_manager_or_admin()
+RETURNS boolean
+LANGUAGE sql
+SECURITY DEFINER
+SET search_path = public
+STABLE
+AS $$
+    SELECT EXISTS (
+        SELECT 1 FROM rs_user_profiles up
+        WHERE up.user_id = auth.uid()
+          AND up.role IN ('broker_manager', 'admin')
+    )
+$$;
+
+GRANT EXECUTE ON FUNCTION public.fn_contract_cedant_id(uuid) TO authenticated;
+GRANT EXECUTE ON FUNCTION public.fn_contract_has_reinsurer(uuid, uuid) TO authenticated;
+GRANT EXECUTE ON FUNCTION public.fn_is_broker_manager_or_admin() TO authenticated;
+
 -- =============================================================================
 -- RLS 활성화 — 15개 테이블 전체
 -- =============================================================================
@@ -173,17 +215,13 @@ DO $$ BEGIN
         );
 EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 
--- 수재사 뷰어: rs_contract_shares에 자사가 포함된 계약만
+-- 수재사 뷰어: rs_contract_shares에 자사가 포함된 계약만 (fn으로 RLS 순환 방지)
 DO $$ BEGIN
     CREATE POLICY "contracts_select_reinsurer"
         ON rs_contracts FOR SELECT
         USING (
             get_user_role() = 'reinsurer_viewer'
-            AND EXISTS (
-                SELECT 1 FROM rs_contract_shares cs
-                WHERE cs.contract_id = rs_contracts.id
-                  AND cs.reinsurer_id = get_user_company_id()
-            )
+            AND fn_contract_has_reinsurer(rs_contracts.id, get_user_company_id())
         );
 EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 
@@ -226,17 +264,13 @@ DO $$ BEGIN
         );
 EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 
--- 출재사 뷰어: 자사 계약의 지분 정보 조회
+-- 출재사 뷰어: 자사 계약의 지분 정보 조회 (fn으로 RLS 순환 방지)
 DO $$ BEGIN
     CREATE POLICY "contract_shares_select_cedant"
         ON rs_contract_shares FOR SELECT
         USING (
             get_user_role() = 'cedant_viewer'
-            AND EXISTS (
-                SELECT 1 FROM rs_contracts c
-                WHERE c.id = rs_contract_shares.contract_id
-                  AND c.cedant_id = get_user_company_id()
-            )
+            AND fn_contract_cedant_id(rs_contract_shares.contract_id) = get_user_company_id()
         );
 EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 
@@ -269,11 +303,11 @@ DO $$ BEGIN
         USING (user_id = auth.uid());
 EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 
--- 브로커 관리자·admin: 전체 조회
+-- 브로커 관리자·admin: 전체 조회 (get_user_role() 재진입 방지)
 DO $$ BEGIN
     CREATE POLICY "user_profiles_select_manager"
         ON rs_user_profiles FOR SELECT
-        USING (get_user_role() IN ('broker_manager', 'admin'));
+        USING (fn_is_broker_manager_or_admin());
 EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 
 -- 생성: admin만

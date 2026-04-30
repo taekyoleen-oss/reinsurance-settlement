@@ -11,20 +11,54 @@ interface OutstandingSummary {
   net: number
 }
 
-export function OutstandingKPICard() {
+/** 미청산 KPI 조회 범위 (거래상대방·출재사·특약) */
+export interface OutstandingScopeProps {
+  counterpartyId?: string
+  contractId?: string
+  cedantId?: string
+}
+
+export function OutstandingKPICard({
+  counterpartyId,
+  contractId,
+  cedantId,
+}: OutstandingScopeProps = {}) {
   const [data, setData] = useState<OutstandingSummary[]>([])
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    fetch('/api/outstanding')
-      .then((r) => r.json())
+    let cancelled = false
+    setLoading(true)
+    setData([])
+
+    const p = new URLSearchParams()
+    if (counterpartyId) p.set('counterpartyId', counterpartyId)
+    if (contractId) p.set('contractId', contractId)
+    if (cedantId) p.set('cedant_id', cedantId)
+    const qs = p.toString()
+    const url = qs ? `/api/outstanding?${qs}` : '/api/outstanding'
+
+    fetch(url, { cache: 'no-store' })
+      .then((r) => {
+        if (!r.ok) throw new Error(String(r.status))
+        return r.json()
+      })
       .then((d) => {
+        if (cancelled) return
         const raw: OutstandingSummary[] = Array.isArray(d) ? d : (d.data ?? [])
         setData(raw)
       })
-      .catch(() => {})
-      .finally(() => setLoading(false))
-  }, [])
+      .catch(() => {
+        if (!cancelled) setData([])
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false)
+      })
+
+    return () => {
+      cancelled = true
+    }
+  }, [counterpartyId, contractId, cedantId])
 
   const fmt = (n: number, currency: string) =>
     new Intl.NumberFormat('en-US', {

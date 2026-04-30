@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import { cn } from '@/lib/utils/cn'
 import { ThemeToggle } from '@/components/shared/ThemeToggle'
+import { ProcessStepIndicator, getStepFromPathname } from '@/components/shared/ProcessStepIndicator'
 import { Button } from '@/components/ui/button'
 import { createClient } from '@/lib/supabase/client'
 import {
@@ -20,19 +21,21 @@ import {
   BarChart3,
   LogOut,
   Menu,
+  ClipboardList,
 } from 'lucide-react'
 
 const NAV_ITEMS = [
-  { href: '/dashboard', label: '대시보드', icon: LayoutDashboard },
-  { href: '/transactions', label: '거래 관리', icon: FileText },
-  { href: '/account-currents', label: '정산서 관리', icon: Layers },
-  { href: '/settlements', label: '결제 관리', icon: CreditCard },
-  { href: '/outstanding', label: '미청산 잔액', icon: AlertCircle },
-  { href: '/reconciliation', label: '대사 관리', icon: GitMerge },
-  { href: '/contracts', label: '계약 관리', icon: BookOpen },
-  { href: '/counterparties', label: '거래상대방', icon: Users },
-  { href: '/exchange-rates', label: '환율 관리', icon: RefreshCw },
-  { href: '/reports', label: '보고서', icon: BarChart3 },
+  { href: '/dashboard',        label: '대시보드',          icon: LayoutDashboard, step: 0  },
+  { href: '/contracts',        label: '계약 관리',          icon: BookOpen,        step: 1  },
+  { href: '/bordereau',        label: '명세 입력',          icon: ClipboardList,   step: 2  },
+  { href: '/transactions',     label: '거래 관리',          icon: FileText,        step: 2  },
+  { href: '/account-currents', label: '정산서 관리',        icon: Layers,          step: 4  },
+  { href: '/settlements',      label: '결제 관리',          icon: CreditCard,      step: 6  },
+  { href: '/outstanding',      label: '미청산 잔액',        icon: AlertCircle,     step: 7  },
+  { href: '/reconciliation',   label: '대사 관리',          icon: GitMerge,        step: 0  },
+  { href: '/counterparties',   label: '거래상대방',         icon: Users,           step: 0  },
+  { href: '/exchange-rates',   label: '환율 관리',          icon: RefreshCw,       step: 0  },
+  { href: '/reports',          label: '보고서',             icon: BarChart3,       step: 8  },
 ]
 
 export default function BrokerLayout({ children }: { children: React.ReactNode }) {
@@ -59,7 +62,16 @@ export default function BrokerLayout({ children }: { children: React.ReactNode }
             <p className="text-xs text-[var(--text-muted)] mt-0.5">Settlement System</p>
           </div>
           <nav className="flex-1 overflow-y-auto py-2">
-          {NAV_ITEMS.map(({ href, label, icon: Icon }) => {
+            {/* 프로세스 진행 표시 */}
+            <div className="px-3 pb-3 pt-1">
+              <ProcessStepIndicator
+                currentStep={getStepFromPathname(pathname)}
+                collapsed={false}
+              />
+            </div>
+            <div className="mx-3 mb-2 border-t border-border" />
+
+          {NAV_ITEMS.map(({ href, label, icon: Icon, step }) => {
             const isActive = pathname === href || pathname.startsWith(href + '/')
             return (
               <Link
@@ -73,7 +85,17 @@ export default function BrokerLayout({ children }: { children: React.ReactNode }
                 )}
               >
                 <Icon className="h-4 w-4 shrink-0" />
-                {label}
+                <span className="flex-1">{label}</span>
+                {step > 0 && (
+                  <span className={cn(
+                    'text-[9px] font-bold rounded px-1 py-0.5 leading-none',
+                    isActive
+                      ? 'bg-primary text-white'
+                      : 'bg-surface-elevated text-[var(--text-muted)]'
+                  )}>
+                    {step}
+                  </span>
+                )}
               </Link>
             )
           })}

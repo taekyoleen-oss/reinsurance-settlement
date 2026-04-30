@@ -26,9 +26,26 @@ export async function POST(req: NextRequest) {
     if (!user) return NextResponse.json({ error: '인증이 필요합니다.' }, { status: 401 })
 
     const body = await req.json()
-    const settlement = await createSettlement({ ...body, created_by: user.id })
+    const settlement = await createSettlement({
+      settlement_type: body.settlement_type,
+      counterparty_id: body.counterparty_id,
+      amount: Number(body.amount),
+      currency_code: String(body.currency_code ?? 'KRW')
+        .trim()
+        .toUpperCase(),
+      settlement_date: body.settlement_date,
+      bank_reference: body.bank_reference ?? body.reference_no ?? null,
+      notes: body.notes ?? null,
+      created_by: user.id,
+    })
     return NextResponse.json({ data: settlement }, { status: 201 })
   } catch (err: any) {
+    if (err.code === 'EXCHANGE_RATE_NOT_FOUND') {
+      return NextResponse.json(
+        { error: '환율 미등록', currency: err.currency, date: err.date },
+        { status: 422 }
+      )
+    }
     return NextResponse.json({ error: err.message }, { status: 500 })
   }
 }

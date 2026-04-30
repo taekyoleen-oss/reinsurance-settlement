@@ -16,6 +16,8 @@ const config: Config = {
         border: 'var(--border)',
         primary: {
           DEFAULT: 'var(--primary)',
+          foreground: 'var(--primary-foreground)',
+          hover: 'var(--primary-hover)',
           muted: 'var(--primary-muted)',
         },
         accent: 'var(--accent)',
@@ -29,13 +31,18 @@ const config: Config = {
         'text-number': 'var(--text-number)',
       },
       fontFamily: {
+        sans: ['DM Sans', 'system-ui', 'sans-serif'],
         mono: ['IBM Plex Mono', 'monospace'],
       },
       borderRadius: {
-        DEFAULT: '4px',
-        lg: '6px',
-        md: '4px',
-        sm: '2px',
+        DEFAULT: '6px',
+        lg: '10px',
+        md: '6px',
+        sm: '4px',
+      },
+      boxShadow: {
+        surface: '0 1px 2px rgba(15, 22, 20, 0.06)',
+        'surface-md': '0 4px 14px rgba(15, 22, 20, 0.08)',
       },
       animation: {
         'accordion-down': 'accordion-down 0.2s ease-out',
