@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect } from 'react'
+import { clientLogger } from '@/lib/client-logger'
 import { Button } from '@/components/ui/button'
 import { AlertTriangle } from 'lucide-react'
 
@@ -12,7 +13,7 @@ export default function ExternalError({
   reset: () => void
 }) {
   useEffect(() => {
-    console.error('[ExternalError]', error)
+    clientLogger.error('ExternalError', error)
   }, [error])
 
   return (

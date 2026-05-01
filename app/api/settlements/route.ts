@@ -1,27 +1,22 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getSettlements, createSettlement } from '@/lib/supabase/queries/settlements'
-import { handleApiError } from '@/lib/api/error-handler'
-import { withBrokerSchema } from '@/lib/api/handler'
+import { withBrokerAuth, withBrokerSchema } from '@/lib/api/handler'
 import { SettlementCreateSchema } from '@/lib/api/schemas/settlement'
 
-export async function GET(req: NextRequest) {
-  try {
-    const { searchParams } = new URL(req.url)
-    const filters = {
-      counterpartyId: searchParams.get('counterpartyId') ?? undefined,
-      currencyCode:   searchParams.get('currencyCode') ?? undefined,
-      matchStatus:    searchParams.get('matchStatus') ?? undefined,
-      dateFrom:       searchParams.get('dateFrom') ?? undefined,
-      dateTo:         searchParams.get('dateTo') ?? undefined,
-    }
-    const page     = Math.max(1, parseInt(searchParams.get('page') ?? '1') || 1)
-    const pageSize = Math.min(500, Math.max(1, parseInt(searchParams.get('pageSize') ?? '50') || 50))
-    const { data, total } = await getSettlements(filters, { page, pageSize })
-    return NextResponse.json({ data, meta: { total, page, pageSize } })
-  } catch (err) {
-    return handleApiError(err)
+export const GET = withBrokerAuth(async (_auth, req) => {
+  const { searchParams } = new URL(req.url)
+  const filters = {
+    counterpartyId: searchParams.get('counterpartyId') ?? undefined,
+    currencyCode:   searchParams.get('currencyCode') ?? undefined,
+    matchStatus:    searchParams.get('matchStatus') ?? undefined,
+    dateFrom:       searchParams.get('dateFrom') ?? undefined,
+    dateTo:         searchParams.get('dateTo') ?? undefined,
   }
-}
+  const page     = Math.max(1, parseInt(searchParams.get('page') ?? '1') || 1)
+  const pageSize = Math.min(500, Math.max(1, parseInt(searchParams.get('pageSize') ?? '50') || 50))
+  const { data, total } = await getSettlements(filters, { page, pageSize })
+  return NextResponse.json({ data, meta: { total, page, pageSize } })
+})
 
 export const POST = withBrokerSchema(SettlementCreateSchema, async (body, { user }) => {
   const settlement = await createSettlement({

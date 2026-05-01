@@ -1,6 +1,7 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
+import useSWR, { mutate } from 'swr'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -14,15 +15,18 @@ import { Badge } from '@/components/ui/badge'
 import { Plus, Pencil } from 'lucide-react'
 import type { CounterpartyRow } from '@/types'
 
+const fetcher = (url: string) => fetch(url).then((r) => r.json()).then((d) => d.data ?? [])
+
 const TYPE_LABELS: Record<string, string> = {
   reinsurer: '수재사',
   cedant: '출재사',
   broker: '브로커',
 }
 
+const CP_URL = '/api/counterparties'
+
 export default function CounterpartiesPage() {
-  const [counterparties, setCounterparties] = useState<CounterpartyRow[]>([])
-  const [loading, setLoading] = useState(true)
+  const { data: counterparties = [], isLoading: loading } = useSWR<CounterpartyRow[]>(CP_URL, fetcher)
   const [showForm, setShowForm] = useState(false)
   const [editTarget, setEditTarget] = useState<CounterpartyRow | null>(null)
   const [formLoading, setFormLoading] = useState(false)
@@ -49,16 +53,6 @@ export default function CounterpartiesPage() {
     default_currency: '',
   })
 
-  const fetchCounterparties = () => {
-    setLoading(true)
-    fetch('/api/counterparties')
-      .then((r) => r.json())
-      .then((d) => setCounterparties(d.data ?? []))
-      .catch(() => {})
-      .finally(() => setLoading(false))
-  }
-
-  useEffect(() => { fetchCounterparties() }, [])
 
   const openEdit = (cp: CounterpartyRow) => {
     setEditTarget(cp)
@@ -92,7 +86,7 @@ export default function CounterpartiesPage() {
       setShowForm(false)
       setEditTarget(null)
       resetForm()
-      fetchCounterparties()
+      mutate(CP_URL)
     } catch (err) {
       toast.error(err instanceof Error ? err.message : String(err))
     } finally {

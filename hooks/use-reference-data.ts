@@ -8,10 +8,6 @@ const jsonFetcher = (url: string) =>
     .then((r) => r.json())
     .then((d) => d.data ?? [])
 
-/**
- * 계약 목록 — SWR 캐시로 페이지 간 공유 (재fetch 방지)
- * initialData: RSC 페이지에서 서버사이드로 전달한 초기 데이터
- */
 export function useContracts(initialData: ContractWithCedantRow[] = []) {
   const { data } = useSWR<ContractWithCedantRow[]>('/api/contracts', jsonFetcher, {
     fallbackData: initialData,
@@ -21,9 +17,6 @@ export function useContracts(initialData: ContractWithCedantRow[] = []) {
   return data ?? initialData
 }
 
-/**
- * 거래상대방 목록 — SWR 캐시로 페이지 간 공유
- */
 export function useCounterparties(initialData: CounterpartyRow[] = []) {
   const { data } = useSWR<CounterpartyRow[]>('/api/counterparties', jsonFetcher, {
     fallbackData: initialData,
@@ -33,9 +26,15 @@ export function useCounterparties(initialData: CounterpartyRow[] = []) {
   return data ?? initialData
 }
 
-/**
- * 통화 목록 — 자주 바뀌지 않으므로 5분 캐시
- */
+export function useCounterpartiesByType(type: 'cedant' | 'reinsurer' | 'broker') {
+  const { data } = useSWR<CounterpartyRow[]>(
+    `/api/counterparties?company_type=${type}`,
+    jsonFetcher,
+    { revalidateOnFocus: false, dedupingInterval: 300_000 }
+  )
+  return data ?? []
+}
+
 export function useCurrencies(initialData: CurrencyRow[] = []) {
   const { data } = useSWR<CurrencyRow[]>('/api/currencies', jsonFetcher, {
     fallbackData: initialData,

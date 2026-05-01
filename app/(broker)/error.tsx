@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect } from 'react'
+import { clientLogger } from '@/lib/client-logger'
 import { Button } from '@/components/ui/button'
 import { AlertTriangle } from 'lucide-react'
 
@@ -12,7 +13,7 @@ export default function BrokerError({
   reset: () => void
 }) {
   useEffect(() => {
-    console.error('[BrokerError]', error)
+    clientLogger.error('BrokerError', error)
   }, [error])
 
   return (

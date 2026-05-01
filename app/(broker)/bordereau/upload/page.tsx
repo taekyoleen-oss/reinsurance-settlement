@@ -1,12 +1,12 @@
 'use client'
 
-import { useState, useRef, useEffect } from 'react'
+import { useState, useRef, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { ArrowLeft, Upload, FileText, CheckCircle2, AlertCircle, Download } from 'lucide-react'
 import Link from 'next/link'
 import { CedantFilterSelect } from '@/components/contracts/CedantFilterSelect'
-import type { ContractWithCedantRow } from '@/types'
+import { useContracts } from '@/hooks/use-reference-data'
 
 const PREMIUM_CSV_HEADERS = [
   'policy_no', 'period_yyyyqn', 'insured_name',
@@ -39,29 +39,17 @@ function downloadSample(type: 'premium' | 'loss') {
 export default function BordereauUploadPage() {
   const router = useRouter()
   const fileRef = useRef<HTMLInputElement>(null)
-  const [contracts, setContracts] = useState<ContractWithCedantRow[]>([])
+  const allContracts = useContracts()
   const [filterCedantId, setFilterCedantId] = useState('')
+  const contracts = useMemo(
+    () => allContracts.filter((c) => !filterCedantId || c.cedant_id === filterCedantId),
+    [allContracts, filterCedantId]
+  )
   const [type, setType] = useState<'premium' | 'loss'>('premium')
   const [contractId, setContractId] = useState('')
   const [file, setFile] = useState<File | null>(null)
   const [uploading, setUploading] = useState(false)
   const [result, setResult] = useState<null | { success: boolean; message: string; details?: string[] }>(null)
-
-  useEffect(() => {
-    const params = new URLSearchParams()
-    if (filterCedantId) params.set('cedant_id', filterCedantId)
-    const q = params.toString()
-    fetch(q ? `/api/contracts?${q}` : '/api/contracts')
-      .then((r) => r.json())
-      .then((j) => setContracts(j.data ?? []))
-  }, [filterCedantId])
-
-  useEffect(() => {
-    if (!contractId || contracts.length === 0) return
-    if (!contracts.some((c) => c.id === contractId)) {
-      setContractId('')
-    }
-  }, [contracts, contractId])
 
   const handleUpload = async () => {
     if (!file || !contractId) return

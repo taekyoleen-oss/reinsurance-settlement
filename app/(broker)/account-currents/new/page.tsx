@@ -12,12 +12,12 @@ import { CedantFilterSelect } from '@/components/contracts/CedantFilterSelect'
 import { DuplicateACWarningBanner } from '@/components/shared/DuplicateACWarningBanner'
 import { ArrowLeft, FileText } from 'lucide-react'
 import Link from 'next/link'
-import type { ContractRow, CounterpartyRow } from '@/types'
+import { useContracts, useCounterparties } from '@/hooks/use-reference-data'
 
 export default function NewAccountCurrentPage() {
   const router = useRouter()
-  const [contracts, setContracts] = useState<ContractRow[]>([])
-  const [counterparties, setCounterparties] = useState<CounterpartyRow[]>([])
+  const contracts = useContracts()
+  const counterparties = useCounterparties()
   const [loading, setLoading] = useState(false)
   const [duplicateWarning, setDuplicateWarning] = useState(false)
   const [filterCedantId, setFilterCedantId] = useState('')
@@ -31,16 +31,6 @@ export default function NewAccountCurrentPage() {
     settlement_currency: 'KRW',
     notes: '',
   })
-
-  useEffect(() => {
-    Promise.all([
-      fetch('/api/contracts').then((r) => r.json()),
-      fetch('/api/counterparties').then((r) => r.json()),
-    ]).then(([cd, cpd]) => {
-      setContracts(cd.data ?? [])
-      setCounterparties(cpd.data ?? [])
-    }).catch(() => {})
-  }, [])
 
   const contractsForSelect = useMemo(
     () => contracts.filter((c) => !filterCedantId || c.cedant_id === filterCedantId),

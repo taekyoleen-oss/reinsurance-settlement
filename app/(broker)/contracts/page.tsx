@@ -1,31 +1,26 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { format } from 'date-fns'
 import Link from 'next/link'
+import useSWR from 'swr'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
+  Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from '@/components/ui/table'
 import { Badge } from '@/components/ui/badge'
 import { ClipboardList, Plus } from 'lucide-react'
 import { CedantFilterSelect } from '@/components/contracts/CedantFilterSelect'
 import type { ContractWithCedantRow } from '@/types'
 
-const STATUS_LABELS = { active: '활성', expired: '만료', cancelled: '취소' }
-const TYPE_LABELS = { treaty: 'Treaty', facultative: 'Facultative' }
+const STATUS_LABELS: Record<string, string> = { active: '활성', expired: '만료', cancelled: '취소' }
+const TYPE_LABELS: Record<string, string> = { treaty: 'Treaty', facultative: 'Facultative' }
+
+const fetcher = (url: string) => fetch(url).then((r) => r.json()).then((d) => d.data ?? [])
 
 export default function ContractsPage() {
-  const [contracts, setContracts] = useState<ContractWithCedantRow[]>([])
-  const [loading, setLoading] = useState(true)
-  const [loadError, setLoadError] = useState('')
   const [filterStatus, setFilterStatus] = useState('all')
   const [filterType, setFilterType] = useState('all')
   const [search, setSearch] = useState('')
@@ -37,28 +32,21 @@ export default function ContractsPage() {
     return () => clearTimeout(t)
   }, [search])
 
-  useEffect(() => {
+  const contractsUrl = useMemo(() => {
     const params = new URLSearchParams()
     if (filterStatus !== 'all') params.set('status', filterStatus)
     if (filterType !== 'all') params.set('contract_type', filterType)
     if (debouncedSearch) params.set('search', debouncedSearch)
     if (filterCedantId) params.set('cedant_id', filterCedantId)
-
-    setLoading(true)
-    setLoadError('')
     const qs = params.toString()
-    fetch(qs ? `/api/contracts?${qs}` : '/api/contracts')
-      .then(async (r) => {
-        const d = await r.json()
-        if (!r.ok) throw new Error(d.error ?? '계약 목록을 불러오지 못했습니다.')
-        setContracts(d.data ?? [])
-      })
-      .catch((e: Error) => {
-        setContracts([])
-        setLoadError(e.message)
-      })
-      .finally(() => setLoading(false))
+    return qs ? `/api/contracts?${qs}` : '/api/contracts'
   }, [filterStatus, filterType, debouncedSearch, filterCedantId])
+
+  const { data: contracts = [], isLoading, error } = useSWR<ContractWithCedantRow[]>(
+    contractsUrl,
+    fetcher,
+    { revalidateOnFocus: false }
+  )
 
   return (
     <div className="space-y-4">
@@ -90,9 +78,7 @@ export default function ContractsPage() {
           className="w-64"
         />
         <Select value={filterStatus} onValueChange={setFilterStatus}>
-          <SelectTrigger className="w-32">
-            <SelectValue />
-          </SelectTrigger>
+          <SelectTrigger className="w-32"><SelectValue /></SelectTrigger>
           <SelectContent>
             <SelectItem value="all">전체 상태</SelectItem>
             <SelectItem value="active">활성</SelectItem>
@@ -101,9 +87,7 @@ export default function ContractsPage() {
           </SelectContent>
         </Select>
         <Select value={filterType} onValueChange={setFilterType}>
-          <SelectTrigger className="w-36">
-            <SelectValue />
-          </SelectTrigger>
+          <SelectTrigger className="w-36"><SelectValue /></SelectTrigger>
           <SelectContent>
             <SelectItem value="all">전체 유형</SelectItem>
             <SelectItem value="treaty">Treaty</SelectItem>
@@ -112,13 +96,13 @@ export default function ContractsPage() {
         </Select>
       </div>
 
-      {loadError && (
+      {error && (
         <div className="rounded border border-warning-urgent/40 bg-warning-urgent/10 px-4 py-3 text-sm text-warning-urgent">
-          {loadError}
+          계약 목록을 불러오지 못했습니다.
         </div>
       )}
 
-      {loading ? (
+      {isLoading ? (
         <div className="p-8 text-center text-sm text-[var(--text-muted)] animate-pulse">로딩 중...</div>
       ) : (
         <Table>
@@ -164,11 +148,7 @@ export default function ContractsPage() {
                 </TableCell>
                 <TableCell className="text-xs font-mono">{c.settlement_currency}</TableCell>
                 <TableCell>
-                  <Badge
-                    variant={
-                      c.status === 'active' ? 'success' : c.status === 'expired' ? 'warning' : 'muted'
-                    }
-                  >
+                  <Badge variant={c.status === 'active' ? 'success' : c.status === 'expired' ? 'warning' : 'muted'}>
                     {STATUS_LABELS[c.status]}
                   </Badge>
                 </TableCell>

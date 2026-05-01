@@ -1,18 +1,22 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { CedantFilterSelect } from '@/components/contracts/CedantFilterSelect'
 import { FieldHelp } from '@/components/shared/FieldHelp'
 import { ArrowLeft, Save, Calculator } from 'lucide-react'
 import Link from 'next/link'
-import type { ContractWithCedantRow } from '@/types'
+import { useContracts } from '@/hooks/use-reference-data'
 
 export default function LossBordereauNewPage() {
   const router = useRouter()
-  const [contracts, setContracts] = useState<ContractWithCedantRow[]>([])
+  const allContracts = useContracts()
   const [filterCedantId, setFilterCedantId] = useState('')
+  const contracts = useMemo(
+    () => allContracts.filter((c) => !filterCedantId || c.cedant_id === filterCedantId),
+    [allContracts, filterCedantId]
+  )
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
 
@@ -30,15 +34,6 @@ export default function LossBordereauNewPage() {
     loss_status: 'in_progress',
     currency: 'KRW',
   })
-
-  useEffect(() => {
-    const params = new URLSearchParams()
-    if (filterCedantId) params.set('cedant_id', filterCedantId)
-    const q = params.toString()
-    fetch(q ? `/api/contracts?${q}` : '/api/contracts')
-      .then((r) => r.json())
-      .then((j) => setContracts(j.data ?? []))
-  }, [filterCedantId])
 
   useEffect(() => {
     if (!form.contract_id || contracts.length === 0) return

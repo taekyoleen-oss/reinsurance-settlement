@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useMemo } from 'react'
 import Link from 'next/link'
 import { useSearchParams } from 'next/navigation'
 import { Plus, Upload, RefreshCw } from 'lucide-react'
@@ -16,8 +16,8 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { CedantFilterSelect } from '@/components/contracts/CedantFilterSelect'
 import { PremiumBordereauTable, LossBordereauTable } from '@/components/bordereau/BordereauTable'
+import { useContracts } from '@/hooks/use-reference-data'
 import type { PremiumBordereauRow, LossBordereauRow } from '@/types/database'
-import type { ContractWithCedantRow } from '@/types'
 
 export function BordereauPageClient() {
   const searchParams = useSearchParams()
@@ -25,20 +25,15 @@ export function BordereauPageClient() {
   const [premiumRows, setPremiumRows] = useState<PremiumBordereauRow[]>([])
   const [lossRows, setLossRows] = useState<LossBordereauRow[]>([])
   const [loading, setLoading] = useState(false)
-  const [contracts, setContracts] = useState<ContractWithCedantRow[]>([])
+  const allContracts = useContracts()
   const [contractId, setContractId] = useState('')
   const [filterCedantId, setFilterCedantId] = useState('')
   const [period, setPeriod] = useState('')
 
-  useEffect(() => {
-    const params = new URLSearchParams()
-    if (filterCedantId) params.set('cedant_id', filterCedantId)
-    const q = params.toString()
-    fetch(q ? `/api/contracts?${q}` : '/api/contracts')
-      .then((r) => r.json())
-      .then((d) => setContracts(d.data ?? []))
-      .catch(() => setContracts([]))
-  }, [filterCedantId])
+  const contracts = useMemo(
+    () => allContracts.filter((c) => !filterCedantId || c.cedant_id === filterCedantId),
+    [allContracts, filterCedantId]
+  )
 
   useEffect(() => {
     if (!contractId || contracts.length === 0) return
