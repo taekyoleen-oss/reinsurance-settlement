@@ -7,11 +7,9 @@ import { CounterpartyUpdateSchema } from '@/lib/api/schemas/counterparty'
 export const GET = withUserAuth(async (_auth, _req, ctx) => {
   const { id } = await ctx.params
   const supabase = await createClient()
-  const { data, error } = await (supabase as any)
-    .from('rs_counterparties')
-    .select('*')
-    .eq('id', id)
-    .single()
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const db = supabase as any
+  const { data, error } = await db.from('rs_counterparties').select('*').eq('id', id).single()
   if (error || !data) throw new NotFoundError('거래상대방을 찾을 수 없습니다.')
   return NextResponse.json({ data })
 })
@@ -19,7 +17,9 @@ export const GET = withUserAuth(async (_auth, _req, ctx) => {
 export const PATCH = withBrokerSchema(CounterpartyUpdateSchema, async (body, _auth, _req, ctx) => {
   const { id } = await ctx.params
   const supabase = await createClient()
-  const { data, error } = await (supabase as any)
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const db = supabase as any
+  const { data, error } = await db
     .from('rs_counterparties')
     .update({ ...body, updated_at: new Date().toISOString() })
     .eq('id', id)
