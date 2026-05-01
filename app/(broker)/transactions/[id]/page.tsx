@@ -11,6 +11,7 @@ import { StatusBadge } from '@/components/shared/StatusBadge'
 import { ArrowLeft, Trash2, Lock } from 'lucide-react'
 import Link from 'next/link'
 import type { TransactionRow } from '@/types'
+import type { ReactNode } from 'react'
 
 const TX_TYPE_LABELS: Record<string, string> = {
   premium: '보험료',
@@ -54,31 +55,52 @@ export default function TransactionDetailPage() {
   }
 
   if (loading) {
-    return <div className="p-8 text-center text-sm text-[var(--text-muted)] animate-pulse">로딩 중...</div>
+    return (
+      <div className="p-8 text-center text-sm text-[var(--text-muted)] animate-pulse">
+        로딩 중...
+      </div>
+    )
   }
   if (!tx) {
-    return <div className="p-8 text-center text-sm text-[var(--text-muted)]">거래를 찾을 수 없습니다.</div>
+    return (
+      <div className="p-8 text-center text-sm text-[var(--text-muted)]">
+        거래를 찾을 수 없습니다.
+      </div>
+    )
   }
 
-  const fields = [
+  const lossReference =
+    (tx as TransactionRow & { loss_reference?: string | null }).loss_reference ?? '-'
+
+  const fields: Array<{ label: string; value: ReactNode; mono?: boolean }> = [
     { label: '거래 ID', value: tx.id, mono: true },
     { label: '계약 ID', value: tx.contract_id, mono: true },
     { label: '거래 유형', value: TX_TYPE_LABELS[tx.transaction_type] ?? tx.transaction_type },
     { label: '방향', value: tx.direction === 'receivable' ? '수취' : '지급' },
     { label: '거래일', value: format(new Date(tx.transaction_date), 'yyyy-MM-dd') },
     { label: '원화 금액', value: tx.amount_krw?.toLocaleString('ko-KR') + ' KRW', mono: true },
-    { label: '외화 금액', value: tx.amount_original?.toLocaleString() + ' ' + tx.currency_code, mono: true },
+    {
+      label: '외화 금액',
+      value: tx.amount_original?.toLocaleString() + ' ' + tx.currency_code,
+      mono: true,
+    },
     { label: '환율', value: tx.exchange_rate?.toFixed(4), mono: true },
     { label: '계약 유형', value: tx.contract_type },
     { label: '배분 유형', value: tx.allocation_type },
     { label: '상태', value: <StatusBadge status={tx.status} /> },
-    { label: '청구 기간', value: tx.period_from && tx.period_to ? `${tx.period_from} ~ ${tx.period_to}` : '-' },
+    {
+      label: '청구 기간',
+      value: tx.period_from && tx.period_to ? `${tx.period_from} ~ ${tx.period_to}` : '-',
+    },
     { label: '만기일', value: tx.due_date ?? '-' },
     { label: '설명', value: tx.description ?? '-' },
-    { label: '손해 참조번호', value: (tx as any).loss_reference ?? '-' },
+    { label: '손해 참조번호', value: lossReference },
     { label: '잠금 여부', value: tx.is_locked ? '잠김' : '잠금 해제' },
     { label: '배분 Parent', value: tx.is_allocation_parent ? 'Yes' : 'No' },
-    { label: '등록일', value: tx.created_at ? format(new Date(tx.created_at), 'yyyy-MM-dd HH:mm') : '-' },
+    {
+      label: '등록일',
+      value: tx.created_at ? format(new Date(tx.created_at), 'yyyy-MM-dd HH:mm') : '-',
+    },
   ]
 
   return (
@@ -94,12 +116,7 @@ export default function TransactionDetailPage() {
           <h1 className="text-xl font-bold text-[var(--text-primary)]">거래 상세</h1>
         </div>
         {!tx.is_locked && !tx.is_deleted && (
-          <Button
-            variant="destructive"
-            size="sm"
-            onClick={handleDelete}
-            disabled={deleting}
-          >
+          <Button variant="destructive" size="sm" onClick={handleDelete} disabled={deleting}>
             <Trash2 className="h-4 w-4 mr-1" />
             삭제
           </Button>
@@ -121,8 +138,10 @@ export default function TransactionDetailPage() {
             {fields.map(({ label, value, mono }) => (
               <div key={label}>
                 <dt className="text-xs text-[var(--text-muted)]">{label}</dt>
-                <dd className={`text-sm mt-0.5 text-[var(--text-primary)] ${mono ? 'font-mono' : ''}`}>
-                  {value as any}
+                <dd
+                  className={`text-sm mt-0.5 text-[var(--text-primary)] ${mono ? 'font-mono' : ''}`}
+                >
+                  {value}
                 </dd>
               </div>
             ))}

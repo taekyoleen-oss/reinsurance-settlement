@@ -1,16 +1,26 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { format } from 'date-fns'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import {
-  Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
 } from '@/components/ui/table'
 import { Badge } from '@/components/ui/badge'
-import { StatusBadge } from '@/components/shared/StatusBadge'
 import { SettlementMatchPanel } from '@/components/settlements/SettlementMatchPanel'
 import { SettlementForm } from '@/components/settlements/SettlementForm'
 import { Plus, ChevronsRight } from 'lucide-react'
@@ -37,15 +47,16 @@ export default function SettlementsPage() {
   const [showForm, setShowForm] = useState(false)
   const [showMatchPanel, setShowMatchPanel] = useState(false)
 
-  const fetchSettlements = () => {
+  const fetchSettlements = useCallback(() => {
     setLoading(true)
     setLoadError('')
     const params = new URLSearchParams()
     if (filterCounterpartyId !== 'all') params.set('counterpartyId', filterCounterpartyId)
     if (filterMatchStatus !== 'all') params.set('matchStatus', filterMatchStatus)
-    if (filterCurrencyCode.trim()) params.set('currencyCode', filterCurrencyCode.trim().toUpperCase())
+    if (filterCurrencyCode.trim())
+      params.set('currencyCode', filterCurrencyCode.trim().toUpperCase())
     if (dateFrom) params.set('dateFrom', dateFrom)
-    if (dateTo)   params.set('dateTo', dateTo)
+    if (dateTo) params.set('dateTo', dateTo)
     fetch(`/api/settlements?${params}`)
       .then(async (r) => {
         const d = await r.json()
@@ -57,18 +68,20 @@ export default function SettlementsPage() {
         setLoadError(e.message)
       })
       .finally(() => setLoading(false))
-  }
+  }, [dateFrom, dateTo, filterCounterpartyId, filterCurrencyCode, filterMatchStatus])
 
   useEffect(() => {
     fetchSettlements()
-  }, [filterCounterpartyId, filterMatchStatus, filterCurrencyCode, dateFrom, dateTo])
+  }, [fetchSettlements])
 
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-[var(--text-primary)]">결제 관리</h1>
-          <p className="text-sm text-[var(--text-secondary)] mt-1">수취/지급 결제 등록 및 정산서 매칭</p>
+          <p className="text-sm text-[var(--text-secondary)] mt-1">
+            수취/지급 결제 등록 및 정산서 매칭
+          </p>
         </div>
         <div className="flex gap-2">
           <Button variant="default" onClick={() => setShowMatchPanel(!showMatchPanel)}>
@@ -89,21 +102,31 @@ export default function SettlementsPage() {
 
       <div className="flex flex-wrap items-end gap-3">
         <div className="space-y-1.5">
-          <Label className="text-[10px] font-medium uppercase text-[var(--text-muted)]">회사(거래상대방)</Label>
+          <Label className="text-[10px] font-medium uppercase text-[var(--text-muted)]">
+            회사(거래상대방)
+          </Label>
           <Select value={filterCounterpartyId} onValueChange={setFilterCounterpartyId}>
-            <SelectTrigger className="h-9 w-48"><SelectValue /></SelectTrigger>
+            <SelectTrigger className="h-9 w-48">
+              <SelectValue />
+            </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">전체 회사</SelectItem>
               {counterparties.map((cp) => (
-                <SelectItem key={cp.id} value={cp.id}>{cp.company_name_ko}</SelectItem>
+                <SelectItem key={cp.id} value={cp.id}>
+                  {cp.company_name_ko}
+                </SelectItem>
               ))}
             </SelectContent>
           </Select>
         </div>
         <div className="space-y-1.5">
-          <Label className="text-[10px] font-medium uppercase text-[var(--text-muted)]">매칭상태</Label>
+          <Label className="text-[10px] font-medium uppercase text-[var(--text-muted)]">
+            매칭상태
+          </Label>
           <Select value={filterMatchStatus} onValueChange={setFilterMatchStatus}>
-            <SelectTrigger className="h-9 w-32"><SelectValue /></SelectTrigger>
+            <SelectTrigger className="h-9 w-32">
+              <SelectValue />
+            </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">전체</SelectItem>
               <SelectItem value="unmatched">미매칭</SelectItem>
@@ -123,12 +146,26 @@ export default function SettlementsPage() {
           />
         </div>
         <div className="space-y-1.5">
-          <Label className="text-[10px] font-medium uppercase text-[var(--text-muted)]">시작일</Label>
-          <Input type="date" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)} className="h-9 w-40" />
+          <Label className="text-[10px] font-medium uppercase text-[var(--text-muted)]">
+            시작일
+          </Label>
+          <Input
+            type="date"
+            value={dateFrom}
+            onChange={(e) => setDateFrom(e.target.value)}
+            className="h-9 w-40"
+          />
         </div>
         <div className="space-y-1.5">
-          <Label className="text-[10px] font-medium uppercase text-[var(--text-muted)]">종료일</Label>
-          <Input type="date" value={dateTo} onChange={(e) => setDateTo(e.target.value)} className="h-9 w-40" />
+          <Label className="text-[10px] font-medium uppercase text-[var(--text-muted)]">
+            종료일
+          </Label>
+          <Input
+            type="date"
+            value={dateTo}
+            onChange={(e) => setDateTo(e.target.value)}
+            className="h-9 w-40"
+          />
         </div>
       </div>
 
@@ -136,7 +173,10 @@ export default function SettlementsPage() {
         <SettlementForm
           counterparties={counterparties}
           currencies={currencies}
-          onSuccess={() => { setShowForm(false); fetchSettlements() }}
+          onSuccess={() => {
+            setShowForm(false)
+            fetchSettlements()
+          }}
           onCancel={() => setShowForm(false)}
         />
       )}
@@ -144,7 +184,9 @@ export default function SettlementsPage() {
       {showMatchPanel && <SettlementMatchPanel />}
 
       {loading ? (
-        <div className="p-8 text-center text-sm text-[var(--text-muted)] animate-pulse">로딩 중...</div>
+        <div className="p-8 text-center text-sm text-[var(--text-muted)] animate-pulse">
+          로딩 중...
+        </div>
       ) : (
         <Table>
           <TableHeader>
@@ -171,9 +213,12 @@ export default function SettlementsPage() {
                   {format(new Date(s.settlement_date), 'yyyy-MM-dd')}
                 </TableCell>
                 <TableCell className="text-xs">
-                  {counterparties.find((cp) => cp.id === s.counterparty_id)?.company_name_ko ?? s.counterparty_id.slice(0, 8)}
+                  {counterparties.find((cp) => cp.id === s.counterparty_id)?.company_name_ko ??
+                    s.counterparty_id.slice(0, 8)}
                 </TableCell>
-                <TableCell className="text-xs">{TYPE_LABELS[s.settlement_type] ?? s.settlement_type}</TableCell>
+                <TableCell className="text-xs">
+                  {TYPE_LABELS[s.settlement_type] ?? s.settlement_type}
+                </TableCell>
                 <TableCell className="text-right font-mono text-sm text-[var(--text-number)]">
                   {s.amount?.toLocaleString()}
                 </TableCell>
@@ -182,15 +227,25 @@ export default function SettlementsPage() {
                   {((s.amount ?? 0) - (s.matched_amount ?? 0)).toLocaleString()}
                 </TableCell>
                 <TableCell>
-                  <Badge variant={
-                    s.match_status === 'fully_matched' ? 'success' :
-                    s.match_status === 'partial' ? 'warning' : 'default'
-                  }>
-                    {s.match_status === 'fully_matched' ? '매칭됨' :
-                     s.match_status === 'partial' ? '부분매칭' : '미매칭'}
+                  <Badge
+                    variant={
+                      s.match_status === 'fully_matched'
+                        ? 'success'
+                        : s.match_status === 'partial'
+                          ? 'warning'
+                          : 'default'
+                    }
+                  >
+                    {s.match_status === 'fully_matched'
+                      ? '매칭됨'
+                      : s.match_status === 'partial'
+                        ? '부분매칭'
+                        : '미매칭'}
                   </Badge>
                 </TableCell>
-                <TableCell className="text-xs text-[var(--text-secondary)]">{s.bank_reference ?? '-'}</TableCell>
+                <TableCell className="text-xs text-[var(--text-secondary)]">
+                  {s.bank_reference ?? '-'}
+                </TableCell>
                 <TableCell className="text-right">
                   {s.match_status !== 'fully_matched' && (
                     <Button size="sm" variant="ghost" onClick={() => setShowMatchPanel(true)}>

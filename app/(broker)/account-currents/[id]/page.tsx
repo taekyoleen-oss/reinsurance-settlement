@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { useParams } from 'next/navigation'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
@@ -19,22 +19,32 @@ export default function AccountCurrentDetailPage() {
   const [loading, setLoading] = useState(true)
   const [actionLoading, setActionLoading] = useState(false)
 
-  const fetchAC = () => {
+  const fetchAC = useCallback(() => {
     setLoading(true)
     Promise.all([
       fetch(`/api/account-currents/${id}`).then((r) => r.json()),
-      fetch(`/api/account-currents/${id}/items`).then((r) => r.json()).catch(() => ({ data: [] })),
-    ]).then(([acd, itemsd]) => {
-      setAc(acd.data ?? acd)
-      setItems(itemsd.data ?? [])
-    }).catch(() => {})
+      fetch(`/api/account-currents/${id}/items`)
+        .then((r) => r.json())
+        .catch(() => ({ data: [] })),
+    ])
+      .then(([acd, itemsd]) => {
+        setAc(acd.data ?? acd)
+        setItems(itemsd.data ?? [])
+      })
+      .catch(() => {})
       .finally(() => setLoading(false))
-  }
+  }, [id])
 
-  useEffect(() => { fetchAC() }, [id])
+  useEffect(() => {
+    fetchAC()
+  }, [fetchAC])
 
   const doAction = async (action: string) => {
-    if (action === 'cancel' && !confirm('정산서를 취소하시겠습니까? 연결된 거래가 잠금 해제됩니다.')) return
+    if (
+      action === 'cancel' &&
+      !confirm('정산서를 취소하시겠습니까? 연결된 거래가 잠금 해제됩니다.')
+    )
+      return
     setActionLoading(true)
     try {
       const res = await fetch(`/api/account-currents/${id}/${action}`, { method: 'POST' })
@@ -50,10 +60,18 @@ export default function AccountCurrentDetailPage() {
   }
 
   if (loading) {
-    return <div className="p-8 text-center text-sm text-[var(--text-muted)] animate-pulse">로딩 중...</div>
+    return (
+      <div className="p-8 text-center text-sm text-[var(--text-muted)] animate-pulse">
+        로딩 중...
+      </div>
+    )
   }
   if (!ac) {
-    return <div className="p-8 text-center text-sm text-[var(--text-muted)]">정산서를 찾을 수 없습니다.</div>
+    return (
+      <div className="p-8 text-center text-sm text-[var(--text-muted)]">
+        정산서를 찾을 수 없습니다.
+      </div>
+    )
   }
 
   return (

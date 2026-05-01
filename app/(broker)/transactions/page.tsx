@@ -9,6 +9,7 @@ async function getInitialData(): Promise<{
 }> {
   try {
     const supabase = await createClient()
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const db = supabase as any
     const [contractsRes, cpsRes] = await Promise.allSettled([
       db.from('rs_contracts').select('*').order('created_at', { ascending: false }),
@@ -17,7 +18,10 @@ async function getInitialData(): Promise<{
     const rawContracts = contractsRes.status === 'fulfilled' ? (contractsRes.value.data ?? []) : []
     const rawCps = cpsRes.status === 'fulfilled' ? (cpsRes.value.data ?? []) : []
     const contracts = await attachCedantSummaries(db, rawContracts)
-    return { contracts: contracts as ContractWithCedantRow[], counterparties: rawCps as CounterpartyRow[] }
+    return {
+      contracts: contracts as ContractWithCedantRow[],
+      counterparties: rawCps as CounterpartyRow[],
+    }
   } catch {
     return { contracts: [], counterparties: [] }
   }

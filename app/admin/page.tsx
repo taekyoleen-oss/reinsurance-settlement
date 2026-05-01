@@ -5,14 +5,18 @@ import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import {
-  Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
 } from '@/components/ui/table'
 import { Badge } from '@/components/ui/badge'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { Plus, RefreshCw, Trash2 } from 'lucide-react'
+import { Plus, Trash2 } from 'lucide-react'
 
 interface UserProfile {
   id: string
@@ -58,19 +62,30 @@ export default function AdminPage() {
 
   useEffect(() => {
     Promise.all([
-      fetch('/api/admin/users').then((r) => r.json()).catch(() => ({ data: [] })),
-      fetch('/api/admin/share-tokens').then((r) => r.json()).catch(() => ({ data: [] })),
-      fetch('/api/currencies').then((r) => r.json()).catch(() => []),
-    ]).then(([ud, td, cd]) => {
-      setUsers(ud.data ?? [])
-      setTokens(td.data ?? [])
-      setCurrencies(cd.data ?? [])
-    }).finally(() => setLoading(false))
+      fetch('/api/admin/users')
+        .then((r) => r.json())
+        .catch(() => ({ data: [] })),
+      fetch('/api/admin/share-tokens')
+        .then((r) => r.json())
+        .catch(() => ({ data: [] })),
+      fetch('/api/currencies')
+        .then((r) => r.json())
+        .catch(() => []),
+    ])
+      .then(([ud, td, cd]) => {
+        setUsers(ud.data ?? [])
+        setTokens(td.data ?? [])
+        setCurrencies(cd.data ?? [])
+      })
+      .finally(() => setLoading(false))
   }, [])
 
   const handleAddCurrency = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!newCurrency.code || !newCurrency.name) { toast.error('코드와 이름을 입력하세요.'); return }
+    if (!newCurrency.code || !newCurrency.name) {
+      toast.error('코드와 이름을 입력하세요.')
+      return
+    }
     setCurrencyLoading(true)
     try {
       const res = await fetch('/api/currencies', {
@@ -106,7 +121,9 @@ export default function AdminPage() {
       <div className="max-w-5xl mx-auto space-y-4">
         <div>
           <h1 className="text-2xl font-bold text-[var(--text-primary)]">시스템 관리</h1>
-          <p className="text-sm text-[var(--text-secondary)] mt-1">사용자, 공유 토큰, 통화 마스터 관리</p>
+          <p className="text-sm text-[var(--text-secondary)] mt-1">
+            사용자, 공유 토큰, 통화 마스터 관리
+          </p>
         </div>
 
         <Tabs defaultValue="users">
@@ -123,7 +140,9 @@ export default function AdminPage() {
               </CardHeader>
               <CardContent>
                 {loading ? (
-                  <div className="p-4 text-center text-sm text-[var(--text-muted)] animate-pulse">로딩 중...</div>
+                  <div className="p-4 text-center text-sm text-[var(--text-muted)] animate-pulse">
+                    로딩 중...
+                  </div>
                 ) : (
                   <Table>
                     <TableHeader>
@@ -155,7 +174,12 @@ export default function AdminPage() {
                       ))}
                       {users.length === 0 && (
                         <TableRow>
-                          <TableCell colSpan={5} className="text-center text-[var(--text-muted)] py-6">사용자 없음</TableCell>
+                          <TableCell
+                            colSpan={5}
+                            className="text-center text-[var(--text-muted)] py-6"
+                          >
+                            사용자 없음
+                          </TableCell>
                         </TableRow>
                       )}
                     </TableBody>
@@ -185,18 +209,36 @@ export default function AdminPage() {
                   <TableBody>
                     {tokens.map((tk) => (
                       <TableRow key={tk.id}>
-                        <TableCell className="font-mono text-xs">{tk.token?.slice(0, 8)}...</TableCell>
-                        <TableCell className="text-xs">{tk.target_type} / {tk.target_id?.slice(0, 8)}</TableCell>
-                        <TableCell className="text-xs font-mono">{tk.expires_at?.slice(0, 10)}</TableCell>
-                        <TableCell className="text-xs text-[var(--text-secondary)]">{tk.notes ?? '-'}</TableCell>
+                        <TableCell className="font-mono text-xs">
+                          {tk.token?.slice(0, 8)}...
+                        </TableCell>
+                        <TableCell className="text-xs">
+                          {tk.target_type} / {tk.target_id?.slice(0, 8)}
+                        </TableCell>
+                        <TableCell className="text-xs font-mono">
+                          {tk.expires_at?.slice(0, 10)}
+                        </TableCell>
+                        <TableCell className="text-xs text-[var(--text-secondary)]">
+                          {tk.notes ?? '-'}
+                        </TableCell>
                         <TableCell>
-                          <Badge variant={tk.is_active && new Date(tk.expires_at) > new Date() ? 'success' : 'muted'}>
+                          <Badge
+                            variant={
+                              tk.is_active && new Date(tk.expires_at) > new Date()
+                                ? 'success'
+                                : 'muted'
+                            }
+                          >
                             {tk.is_active && new Date(tk.expires_at) > new Date() ? '유효' : '만료'}
                           </Badge>
                         </TableCell>
                         <TableCell className="text-right">
                           {tk.is_active && (
-                            <Button size="sm" variant="destructive" onClick={() => handleRevokeToken(tk.id)}>
+                            <Button
+                              size="sm"
+                              variant="destructive"
+                              onClick={() => handleRevokeToken(tk.id)}
+                            >
                               <Trash2 className="h-3 w-3" />
                             </Button>
                           )}
@@ -205,7 +247,12 @@ export default function AdminPage() {
                     ))}
                     {tokens.length === 0 && (
                       <TableRow>
-                        <TableCell colSpan={6} className="text-center text-[var(--text-muted)] py-6">토큰 없음</TableCell>
+                        <TableCell
+                          colSpan={6}
+                          className="text-center text-[var(--text-muted)] py-6"
+                        >
+                          토큰 없음
+                        </TableCell>
                       </TableRow>
                     )}
                   </TableBody>
@@ -226,7 +273,9 @@ export default function AdminPage() {
                       <Label>통화 코드</Label>
                       <Input
                         value={newCurrency.code}
-                        onChange={(e) => setNewCurrency((c) => ({ ...c, code: e.target.value.toUpperCase() }))}
+                        onChange={(e) =>
+                          setNewCurrency((c) => ({ ...c, code: e.target.value.toUpperCase() }))
+                        }
                         placeholder="USD"
                         className="w-24 font-mono"
                         maxLength={3}
@@ -276,7 +325,12 @@ export default function AdminPage() {
                       ))}
                       {currencies.length === 0 && (
                         <TableRow>
-                          <TableCell colSpan={3} className="text-center text-[var(--text-muted)] py-6">통화 없음</TableCell>
+                          <TableCell
+                            colSpan={3}
+                            className="text-center text-[var(--text-muted)] py-6"
+                          >
+                            통화 없음
+                          </TableCell>
                         </TableRow>
                       )}
                     </TableBody>

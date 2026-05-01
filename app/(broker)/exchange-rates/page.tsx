@@ -1,15 +1,26 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { format } from 'date-fns'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import {
-  Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
 } from '@/components/ui/table'
 import { Plus, RefreshCw } from 'lucide-react'
 import type { ExchangeRateRow } from '@/types'
@@ -31,7 +42,7 @@ export default function ExchangeRatesPage() {
     source: '',
   })
 
-  const fetchRates = () => {
+  const fetchRates = useCallback(() => {
     setLoading(true)
     const params = filterCurrency !== 'all' ? `?fromCurrency=${filterCurrency}` : ''
     fetch(`/api/exchange-rates${params}`)
@@ -39,18 +50,25 @@ export default function ExchangeRatesPage() {
       .then((d) => {
         const list = d.data ?? []
         setRates(list)
-        const curs = Array.from(new Set(list.map((r: ExchangeRateRow) => r.from_currency))) as string[]
+        const curs = Array.from(
+          new Set(list.map((r: ExchangeRateRow) => r.from_currency))
+        ) as string[]
         setCurrencies(curs)
       })
       .catch(() => {})
       .finally(() => setLoading(false))
-  }
+  }, [filterCurrency])
 
-  useEffect(() => { fetchRates() }, [filterCurrency])
+  useEffect(() => {
+    fetchRates()
+  }, [fetchRates])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!form.rate) { toast.error('환율을 입력하세요.'); return }
+    if (!form.rate) {
+      toast.error('환율을 입력하세요.')
+      return
+    }
     setFormLoading(true)
     try {
       const res = await fetch('/api/exchange-rates', {
@@ -97,24 +115,54 @@ export default function ExchangeRatesPage() {
             <form onSubmit={handleSubmit} className="grid grid-cols-3 gap-4">
               <div className="space-y-1.5">
                 <Label>기준 통화</Label>
-                <Input value={form.from_currency} onChange={(e) => setForm((f) => ({ ...f, from_currency: e.target.value.toUpperCase() }))} className="font-mono w-24" maxLength={3} />
+                <Input
+                  value={form.from_currency}
+                  onChange={(e) =>
+                    setForm((f) => ({ ...f, from_currency: e.target.value.toUpperCase() }))
+                  }
+                  className="font-mono w-24"
+                  maxLength={3}
+                />
               </div>
               <div className="space-y-1.5">
                 <Label>대상 통화</Label>
-                <Input value={form.to_currency} onChange={(e) => setForm((f) => ({ ...f, to_currency: e.target.value.toUpperCase() }))} className="font-mono w-24" maxLength={3} />
+                <Input
+                  value={form.to_currency}
+                  onChange={(e) =>
+                    setForm((f) => ({ ...f, to_currency: e.target.value.toUpperCase() }))
+                  }
+                  className="font-mono w-24"
+                  maxLength={3}
+                />
               </div>
               <div className="space-y-1.5">
                 <Label>환율 날짜 *</Label>
-                <Input type="date" value={form.rate_date} onChange={(e) => setForm((f) => ({ ...f, rate_date: e.target.value }))} />
+                <Input
+                  type="date"
+                  value={form.rate_date}
+                  onChange={(e) => setForm((f) => ({ ...f, rate_date: e.target.value }))}
+                />
               </div>
               <div className="space-y-1.5">
                 <Label>환율 *</Label>
-                <Input type="number" step="0.0001" value={form.rate} onChange={(e) => setForm((f) => ({ ...f, rate: e.target.value }))} placeholder="1350.0000" className="font-mono" />
+                <Input
+                  type="number"
+                  step="0.0001"
+                  value={form.rate}
+                  onChange={(e) => setForm((f) => ({ ...f, rate: e.target.value }))}
+                  placeholder="1350.0000"
+                  className="font-mono"
+                />
               </div>
               <div className="space-y-1.5">
                 <Label>유형</Label>
-                <Select value={form.rate_type} onValueChange={(v) => setForm((f) => ({ ...f, rate_type: v }))}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
+                <Select
+                  value={form.rate_type}
+                  onValueChange={(v) => setForm((f) => ({ ...f, rate_type: v }))}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="daily">일별</SelectItem>
                     <SelectItem value="monthly">월별</SelectItem>
@@ -124,11 +172,19 @@ export default function ExchangeRatesPage() {
               </div>
               <div className="space-y-1.5">
                 <Label>출처</Label>
-                <Input value={form.source} onChange={(e) => setForm((f) => ({ ...f, source: e.target.value }))} placeholder="BOK, 기준..." />
+                <Input
+                  value={form.source}
+                  onChange={(e) => setForm((f) => ({ ...f, source: e.target.value }))}
+                  placeholder="BOK, 기준..."
+                />
               </div>
               <div className="col-span-3 flex gap-2">
-                <Button type="submit" disabled={formLoading}>{formLoading ? '등록 중...' : '등록'}</Button>
-                <Button type="button" variant="ghost" onClick={() => setShowForm(false)}>취소</Button>
+                <Button type="submit" disabled={formLoading}>
+                  {formLoading ? '등록 중...' : '등록'}
+                </Button>
+                <Button type="button" variant="ghost" onClick={() => setShowForm(false)}>
+                  취소
+                </Button>
               </div>
             </form>
           </CardContent>
@@ -143,14 +199,18 @@ export default function ExchangeRatesPage() {
           <SelectContent>
             <SelectItem value="all">전체</SelectItem>
             {currencies.map((c) => (
-              <SelectItem key={c} value={c}>{c}</SelectItem>
+              <SelectItem key={c} value={c}>
+                {c}
+              </SelectItem>
             ))}
           </SelectContent>
         </Select>
       </div>
 
       {loading ? (
-        <div className="p-8 text-center text-sm text-[var(--text-muted)] animate-pulse">로딩 중...</div>
+        <div className="p-8 text-center text-sm text-[var(--text-muted)] animate-pulse">
+          로딩 중...
+        </div>
       ) : (
         <Table>
           <TableHeader>
@@ -171,10 +231,15 @@ export default function ExchangeRatesPage() {
                   {r.from_currency}/{r.to_currency}
                 </TableCell>
                 <TableCell className="text-right font-mono text-sm text-[var(--text-number)]">
-                  {r.rate?.toLocaleString('ko-KR', { minimumFractionDigits: 2, maximumFractionDigits: 4 })}
+                  {r.rate?.toLocaleString('ko-KR', {
+                    minimumFractionDigits: 2,
+                    maximumFractionDigits: 4,
+                  })}
                 </TableCell>
                 <TableCell className="text-xs">{r.rate_type}</TableCell>
-                <TableCell className="text-xs text-[var(--text-secondary)]">{r.source ?? '-'}</TableCell>
+                <TableCell className="text-xs text-[var(--text-secondary)]">
+                  {r.source ?? '-'}
+                </TableCell>
                 <TableCell className="text-xs text-[var(--text-muted)]">
                   {r.created_at ? format(new Date(r.created_at), 'yyyy-MM-dd') : '-'}
                 </TableCell>

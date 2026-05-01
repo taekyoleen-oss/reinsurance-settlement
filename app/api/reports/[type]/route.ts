@@ -1,9 +1,9 @@
-import { NextRequest, NextResponse } from 'next/server'
+import { NextResponse } from 'next/server'
 import { getOutstandingByCounterparty, getAgingData } from '@/lib/supabase/queries/outstanding'
 import { getAccountCurrents } from '@/lib/supabase/queries/account-currents'
 import { getSettlements } from '@/lib/supabase/queries/settlements'
 import { getTransactions } from '@/lib/supabase/queries/transactions'
-import { handleApiError, ValidationError } from '@/lib/api/error-handler'
+import { ValidationError } from '@/lib/api/error-handler'
 import { withUserAuth } from '@/lib/api/handler'
 
 /**
@@ -37,11 +37,11 @@ export const GET = withUserAuth(async (_auth, req, ctx) => {
     }
     case 'account-currents': {
       const result = await getAccountCurrents({
-        contractId:     searchParams.get('contractId') ?? undefined,
+        contractId: searchParams.get('contractId') ?? undefined,
         counterpartyId: searchParams.get('counterpartyId') ?? undefined,
-        status:         searchParams.get('status') ?? undefined,
-        dateFrom:       searchParams.get('dateFrom') ?? undefined,
-        dateTo:         searchParams.get('dateTo') ?? undefined,
+        status: searchParams.get('status') ?? undefined,
+        dateFrom: searchParams.get('dateFrom') ?? undefined,
+        dateTo: searchParams.get('dateTo') ?? undefined,
       })
       data = result.data
       break
@@ -49,19 +49,19 @@ export const GET = withUserAuth(async (_auth, req, ctx) => {
     case 'settlements': {
       const result = await getSettlements({
         counterpartyId: searchParams.get('counterpartyId') ?? undefined,
-        matchStatus:    searchParams.get('matchStatus') ?? undefined,
-        dateFrom:       searchParams.get('dateFrom') ?? undefined,
-        dateTo:         searchParams.get('dateTo') ?? undefined,
+        matchStatus: searchParams.get('matchStatus') ?? undefined,
+        dateFrom: searchParams.get('dateFrom') ?? undefined,
+        dateTo: searchParams.get('dateTo') ?? undefined,
       })
       data = result.data
       break
     }
     case 'transactions': {
       const result = await getTransactions({
-        contractId:     searchParams.get('contractId') ?? undefined,
+        contractId: searchParams.get('contractId') ?? undefined,
         counterpartyId: searchParams.get('counterpartyId') ?? undefined,
-        dateFrom:       searchParams.get('dateFrom') ?? undefined,
-        dateTo:         searchParams.get('dateTo') ?? undefined,
+        dateFrom: searchParams.get('dateFrom') ?? undefined,
+        dateTo: searchParams.get('dateTo') ?? undefined,
       })
       data = result.data
       break
