@@ -20,12 +20,14 @@ export async function requireUser(): Promise<AuthContext> {
   return { user, supabase }
 }
 
-async function getRole(user: AuthContext['user'], supabase: AuthContext['supabase']): Promise<string> {
-  const db = supabase as any
-  const { data: profile } = await db
+async function getRole(
+  user: AuthContext['user'],
+  supabase: AuthContext['supabase']
+): Promise<string> {
+  const { data: profile } = await supabase
     .from('rs_user_profiles')
     .select('role')
-    .eq('id', user.id)
+    .eq('user_id', user.id)
     .single()
   const role = (profile as { role: string } | null)?.role
   if (!role) throw new ForbiddenError()
