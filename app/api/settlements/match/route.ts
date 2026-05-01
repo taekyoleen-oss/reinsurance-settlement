@@ -1,35 +1,16 @@
-import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@/lib/supabase/server'
+import { NextResponse } from 'next/server'
 import { matchSettlement } from '@/lib/supabase/queries/settlements'
+import { withBrokerSchema } from '@/lib/api/handler'
+import { SettlementMatchSchema } from '@/lib/api/schemas/settlement'
 
-/**
- * POST /api/settlements/match
- * 결제 ↔ 정산서 매칭
- */
-export async function POST(req: NextRequest) {
-  try {
-    const supabase = await createClient()
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) return NextResponse.json({ error: '인증이 필요합니다.' }, { status: 401 })
-
-    const { settlement_id, ac_id, matched_amount, tx_id } = await req.json()
-
-    if (!settlement_id || !ac_id || matched_amount == null) {
-      return NextResponse.json(
-        { error: 'settlement_id, ac_id, matched_amount 필수' },
-        { status: 400 }
-      )
-    }
-
-    const match = await matchSettlement(
-      settlement_id,
-      ac_id,
-      matched_amount,
-      user.id,
-      tx_id
-    )
-    return NextResponse.json({ data: match }, { status: 201 })
-  } catch (err: any) {
-    return NextResponse.json({ error: err.message }, { status: 500 })
-  }
-}
+/** POST /api/settlements/match — 결제 ↔ 정산서 매칭 */
+export const POST = withBrokerSchema(SettlementMatchSchema, async (body, { user }) => {
+  const match = await matchSettlement(
+    body.settlement_id,
+    body.ac_id,
+    body.matched_amount,
+    user.id,
+    body.tx_id ?? undefined
+  )
+  return NextResponse.json({ data: match }, { status: 201 })
+})

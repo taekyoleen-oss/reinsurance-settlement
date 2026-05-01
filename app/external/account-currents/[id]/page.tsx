@@ -25,7 +25,7 @@ export default function ExternalACDetailPage() {
     ]).then(([acd, itemsd]) => {
       const data = acd.data ?? acd
       setAc(data)
-      setItems(Array.isArray(itemsd) ? itemsd : (itemsd.data ?? []))
+      setItems(itemsd.data ?? [])
       setAcknowledged(data?.status === 'acknowledged')
     }).catch(() => {})
       .finally(() => setLoading(false))
@@ -40,8 +40,8 @@ export default function ExternalACDetailPage() {
       toast.success('수신확인이 완료되었습니다.')
       setAcknowledged(true)
       setAc((prev) => prev ? { ...prev, status: 'acknowledged' as any } : prev)
-    } catch (err: any) {
-      toast.error(err.message)
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : String(err))
     } finally {
       setAckLoading(false)
     }
@@ -59,7 +59,7 @@ export default function ExternalACDetailPage() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-xl font-bold text-[var(--text-primary)]">
-            정산서 {(ac as any).ac_no ?? id.slice(0, 8)}
+            정산서 {ac.ac_no ?? id.slice(0, 8)}
           </h1>
           <p className="text-sm text-[var(--text-secondary)] mt-1">
             {ac.period_from} ~ {ac.period_to}

@@ -26,7 +26,7 @@ export default function AccountCurrentDetailPage() {
       fetch(`/api/account-currents/${id}/items`).then((r) => r.json()).catch(() => ({ data: [] })),
     ]).then(([acd, itemsd]) => {
       setAc(acd.data ?? acd)
-      setItems(Array.isArray(itemsd) ? itemsd : (itemsd.data ?? []))
+      setItems(itemsd.data ?? [])
     }).catch(() => {})
       .finally(() => setLoading(false))
   }
@@ -42,8 +42,8 @@ export default function AccountCurrentDetailPage() {
       if (!res.ok) throw new Error(data.error ?? `${action} 실패`)
       toast.success('처리되었습니다.')
       fetchAC()
-    } catch (err: any) {
-      toast.error(err.message)
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : String(err))
     } finally {
       setActionLoading(false)
     }
@@ -67,7 +67,7 @@ export default function AccountCurrentDetailPage() {
         </Link>
         <div className="flex-1">
           <h1 className="text-xl font-bold text-[var(--text-primary)]">
-            정산서 {(ac as any).ac_no ?? (ac as any).ac_number ?? id.slice(0, 8)}
+            정산서 {ac.ac_no ?? id.slice(0, 8)}
           </h1>
         </div>
         <StatusBadge status={ac.status} />

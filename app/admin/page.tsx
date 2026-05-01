@@ -62,9 +62,9 @@ export default function AdminPage() {
       fetch('/api/admin/share-tokens').then((r) => r.json()).catch(() => ({ data: [] })),
       fetch('/api/currencies').then((r) => r.json()).catch(() => []),
     ]).then(([ud, td, cd]) => {
-      setUsers(Array.isArray(ud) ? ud : (ud.data ?? []))
-      setTokens(Array.isArray(td) ? td : (td.data ?? []))
-      setCurrencies(Array.isArray(cd) ? cd : (cd.data ?? []))
+      setUsers(ud.data ?? [])
+      setTokens(td.data ?? [])
+      setCurrencies(cd.data ?? [])
     }).finally(() => setLoading(false))
   }, [])
 
@@ -83,8 +83,8 @@ export default function AdminPage() {
       toast.success('통화가 등록되었습니다.')
       setCurrencies((c) => [...c, data.data ?? data])
       setNewCurrency({ code: '', name: '' })
-    } catch (err: any) {
-      toast.error(err.message)
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : String(err))
     } finally {
       setCurrencyLoading(false)
     }
@@ -96,8 +96,8 @@ export default function AdminPage() {
       if (!res.ok) throw new Error('취소 실패')
       toast.success('토큰이 취소되었습니다.')
       setTokens((t) => t.filter((tk) => tk.id !== id))
-    } catch (err: any) {
-      toast.error(err.message)
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : String(err))
     }
   }
 

@@ -5,6 +5,8 @@ import {
   insertLossBordereau,
   insertLossBordereauBatch,
 } from '@/lib/supabase/queries/bordereau'
+import { handleApiError, NotFoundError } from '@/lib/api/error-handler'
+import { withUserAuth } from '@/lib/api/handler'
 import type { BordereauFilters } from '@/types'
 
 export async function GET(req: NextRequest) {
@@ -19,39 +21,30 @@ export async function GET(req: NextRequest) {
     }
     const data = await getLossBordereau(filters)
     return NextResponse.json({ data })
-  } catch (err: any) {
-    return NextResponse.json({ error: err.message }, { status: 500 })
+  } catch (err) {
+    return handleApiError(err)
   }
 }
 
-export async function POST(req: NextRequest) {
-  try {
-    const supabase = await createClient()
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) return NextResponse.json({ error: '인증이 필요합니다.' }, { status: 401 })
+export const POST = withUserAuth(async ({ user }, req) => {
+  const body = await req.json()
+  const supabase = await createClient()
 
-    const body = await req.json()
+  const contractId = Array.isArray(body) ? body[0]?.contract_id : body.contract_id
+  const { data: contract, error: contractError } = await supabase
+    .from('rs_contracts')
+    .select('*')
+    .eq('id', contractId)
+    .single()
 
-    const contractId = Array.isArray(body) ? body[0]?.contract_id : body.contract_id
-    const { data: contract, error: contractError } = await supabase
-      .from('rs_contracts')
-      .select('*')
-      .eq('id', contractId)
-      .single()
+  if (contractError || !contract) throw new NotFoundError('계약을 찾을 수 없습니다.')
 
-    if (contractError || !contract) {
-      return NextResponse.json({ error: '계약을 찾을 수 없습니다.' }, { status: 404 })
-    }
-
-    if (Array.isArray(body)) {
-      const rows = body.map((r: any) => ({ ...r, created_by: user.id }))
-      const result = await insertLossBordereauBatch(rows, contract)
-      return NextResponse.json({ data: result }, { status: 201 })
-    } else {
-      const row = await insertLossBordereau({ ...body, created_by: user.id }, contract)
-      return NextResponse.json({ data: row }, { status: 201 })
-    }
-  } catch (err: any) {
-    return NextResponse.json({ error: err.message }, { status: 500 })
+  if (Array.isArray(body)) {
+    const rows = body.map((r: any) => ({ ...r, created_by: user.id }))
+    const result = await insertLossBordereauBatch(rows, contract)
+    return NextResponse.json({ data: result }, { status: 201 })
   }
-}
+
+  const row = await insertLossBordereau({ ...body, created_by: user.id }, contract)
+  return NextResponse.json({ data: row }, { status: 201 })
+})

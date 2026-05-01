@@ -36,7 +36,7 @@ export default function ContractDetailPage() {
       fetch(`/api/contracts/${id}/shares`).then((r) => r.json()).catch(() => ({ data: [] })),
     ]).then(([cd, sd]) => {
       setContract(cd.data ?? cd)
-      setShares(Array.isArray(sd) ? sd : (sd.data ?? []))
+      setShares(sd.data ?? [])
     }).catch(() => {})
       .finally(() => setLoading(false))
   }, [id])

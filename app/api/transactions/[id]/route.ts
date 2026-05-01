@@ -1,10 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@/lib/supabase/server'
 import {
   getTransactionById,
   updateTransaction,
   softDeleteTransaction,
 } from '@/lib/supabase/queries/transactions'
+import { handleApiError, NotFoundError, ConflictError } from '@/lib/api/error-handler'
+import { withBrokerSchema, withBrokerAuth } from '@/lib/api/handler'
+import { TransactionUpdateSchema } from '@/lib/api/schemas/transaction'
 
 export async function GET(
   _req: NextRequest,
@@ -13,59 +15,24 @@ export async function GET(
   try {
     const { id } = await params
     const tx = await getTransactionById(id)
-    if (!tx) {
-      return NextResponse.json({ error: '거래를 찾을 수 없습니다.' }, { status: 404 })
-    }
+    if (!tx) throw new NotFoundError('거래를 찾을 수 없습니다.')
     return NextResponse.json({ data: tx })
-  } catch (err: any) {
-    return NextResponse.json({ error: err.message }, { status: 500 })
+  } catch (err) {
+    return handleApiError(err)
   }
 }
 
-export async function PATCH(
-  req: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
-  try {
-    const supabase = await createClient()
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) return NextResponse.json({ error: '인증이 필요합니다.' }, { status: 401 })
-
-    const { id } = await params
-    const body = await req.json()
-
+export const PATCH = withBrokerSchema(
+  TransactionUpdateSchema,
+  async (body, { user }, _req, ctx) => {
+    const { id } = await ctx.params
     const tx = await updateTransaction(id, { ...body, updated_by: user.id })
     return NextResponse.json({ data: tx })
-  } catch (err: any) {
-    if (err.code === 'TRANSACTION_LOCKED') {
-      return NextResponse.json({ error: '잠긴 거래', is_locked: true }, { status: 409 })
-    }
-    if (err.code === 'EXCHANGE_RATE_NOT_FOUND') {
-      return NextResponse.json(
-        { error: '환율 미등록', currency: err.currency, date: err.date },
-        { status: 422 }
-      )
-    }
-    return NextResponse.json({ error: err.message }, { status: 500 })
   }
-}
+)
 
-export async function DELETE(
-  req: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
-  try {
-    const supabase = await createClient()
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) return NextResponse.json({ error: '인증이 필요합니다.' }, { status: 401 })
-
-    const { id } = await params
-    await softDeleteTransaction(id, user.id)
-    return NextResponse.json({ data: { success: true } })
-  } catch (err: any) {
-    if (err.code === 'TRANSACTION_LOCKED') {
-      return NextResponse.json({ error: '잠긴 거래', is_locked: true }, { status: 409 })
-    }
-    return NextResponse.json({ error: err.message }, { status: 500 })
-  }
-}
+export const DELETE = withBrokerAuth(async ({ user }, _req, ctx) => {
+  const { id } = await ctx.params
+  await softDeleteTransaction(id, user.id)
+  return NextResponse.json({ data: { success: true } })
+})

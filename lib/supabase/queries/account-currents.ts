@@ -9,6 +9,9 @@ import {
   aggregateAccountCurrent,
   checkDuplicateAC,
 } from '@/lib/utils/account-current'
+import type { PaginationParams, PagedResult } from './types'
+
+export type { PaginationParams, PagedResult }
 
 export interface ACFilters {
   contractId?: string
@@ -22,11 +25,12 @@ export interface ACFilters {
 }
 
 /**
- * 정산서 목록 조회
+ * 정산서 목록 조회 (필터 + 페이지네이션 지원)
  */
 export async function getAccountCurrents(
-  filters: ACFilters = {}
-): Promise<AccountCurrentRow[]> {
+  filters: ACFilters = {},
+  pagination?: PaginationParams
+): Promise<PagedResult<AccountCurrentRow>> {
   const supabase = await createClient()
   const db = supabase as any
 
@@ -38,7 +42,7 @@ export async function getAccountCurrents(
       .eq('cedant_id', filters.cedantId)
     if (cErr) throw cErr
     const ids = ((crs ?? []) as { id: string }[]).map((r) => r.id)
-    if (ids.length === 0) return []
+    if (ids.length === 0) return { data: [], total: 0 }
     contractIdsForCedant = ids
   }
 
@@ -50,26 +54,30 @@ export async function getAccountCurrents(
       .maybeSingle()
     if (oneErr) throw oneErr
     const row = c as { cedant_id: string } | null
-    if (!row || row.cedant_id !== filters.cedantId) return []
+    if (!row || row.cedant_id !== filters.cedantId) return { data: [], total: 0 }
   }
 
-  let query = supabase
+  let query = db
     .from('rs_account_currents')
-    .select('*')
+    .select('*', { count: 'exact' })
     .order('period_from', { ascending: false })
 
   if (filters.contractId) query = query.eq('contract_id', filters.contractId)
   else if (contractIdsForCedant) query = query.in('contract_id', contractIdsForCedant)
-  if (filters.counterpartyId)
-    query = query.eq('counterparty_id', filters.counterpartyId)
-  if (filters.status) query = query.eq('status', filters.status)
+  if (filters.counterpartyId) query = query.eq('counterparty_id', filters.counterpartyId)
+  if (filters.status)     query = query.eq('status', filters.status)
   if (filters.periodType) query = query.eq('period_type', filters.periodType)
-  if (filters.dateFrom) query = query.gte('period_from', filters.dateFrom)
-  if (filters.dateTo) query = query.lte('period_to', filters.dateTo)
+  if (filters.dateFrom)   query = query.gte('period_from', filters.dateFrom)
+  if (filters.dateTo)     query = query.lte('period_to', filters.dateTo)
 
-  const { data, error } = await query
+  if (pagination) {
+    const from = (pagination.page - 1) * pagination.pageSize
+    query = query.range(from, from + pagination.pageSize - 1)
+  }
+
+  const { data, count, error } = await query
   if (error) throw error
-  return data ?? []
+  return { data: data ?? [], total: count ?? (data?.length ?? 0) }
 }
 
 /**

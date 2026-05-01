@@ -63,12 +63,12 @@ export default function NewContractPage() {
   useEffect(() => {
     fetch('/api/counterparties?company_type=cedant')
       .then((r) => r.json())
-      .then((d) => setCedants(Array.isArray(d) ? d : (d.data ?? [])))
+      .then((d) => setCedants(d.data ?? []))
       .catch(() => {})
 
     fetch('/api/counterparties?company_type=reinsurer')
       .then((r) => r.json())
-      .then((d) => setReinsurers(Array.isArray(d) ? d : (d.data ?? [])))
+      .then((d) => setReinsurers(d.data ?? []))
       .catch(() => {})
   }, [])
 

@@ -8,6 +8,8 @@ import {
   parsePremiumCsvRow,
   parseLossCsvRow,
 } from '@/lib/utils/bordereau-validators'
+import { handleApiError } from '@/lib/api/error-handler'
+import { requireUser } from '@/lib/api/auth'
 import type { PremiumBordereauInsert, LossBordereauInsert } from '@/types/database'
 
 /** CSV 텍스트를 헤더+행 배열로 파싱 */
@@ -33,9 +35,8 @@ function parseCsv(text: string): Record<string, string>[] {
  */
 export async function POST(req: NextRequest) {
   try {
+    const { user } = await requireUser()
     const supabase = await createClient()
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) return NextResponse.json({ error: '인증이 필요합니다.' }, { status: 401 })
 
     const formData = await req.formData()
     const file = formData.get('file') as File | null
@@ -130,7 +131,7 @@ export async function POST(req: NextRequest) {
         }
       }, { status: 201 })
     }
-  } catch (err: any) {
-    return NextResponse.json({ error: err.message }, { status: 500 })
+  } catch (err) {
+    return handleApiError(err)
   }
 }

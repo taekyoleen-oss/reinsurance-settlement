@@ -1,5 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
+import { handleApiError } from '@/lib/api/error-handler'
+import { withBrokerSchema } from '@/lib/api/handler'
+import { CounterpartyCreateSchema } from '@/lib/api/schemas/counterparty'
 
 export async function GET(req: NextRequest) {
   try {
@@ -18,34 +21,20 @@ export async function GET(req: NextRequest) {
     const { data, error } = await query
     if (error) throw error
     return NextResponse.json({ data: data ?? [] })
-  } catch (err: any) {
-    return NextResponse.json({ error: err.message }, { status: 500 })
+  } catch (err) {
+    return handleApiError(err)
   }
 }
 
-export async function POST(req: NextRequest) {
-  try {
-    const supabase = await createClient()
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) return NextResponse.json({ error: '인증이 필요합니다.' }, { status: 401 })
+export const POST = withBrokerSchema(CounterpartyCreateSchema, async (body) => {
+  const supabase = await createClient()
+  const db = supabase as any
+  const { data, error } = await db
+    .from('rs_counterparties')
+    .insert(body)
+    .select()
+    .single()
 
-    const db = supabase as any
-    const body = await req.json()
-
-    if (!body.company_name_ko?.trim()) {
-      return NextResponse.json({ error: '회사명(한글)은 필수입니다.' }, { status: 400 })
-    }
-
-    const { created_by: _ignore, ...row } = body
-    const { data, error } = await db
-      .from('rs_counterparties')
-      .insert(row)
-      .select()
-      .single()
-
-    if (error) throw error
-    return NextResponse.json({ data }, { status: 201 })
-  } catch (err: any) {
-    return NextResponse.json({ error: err.message }, { status: 500 })
-  }
-}
+  if (error) throw error
+  return NextResponse.json({ data }, { status: 201 })
+})

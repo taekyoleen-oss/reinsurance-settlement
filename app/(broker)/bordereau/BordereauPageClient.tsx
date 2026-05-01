@@ -36,7 +36,7 @@ export function BordereauPageClient() {
     const q = params.toString()
     fetch(q ? `/api/contracts?${q}` : '/api/contracts')
       .then((r) => r.json())
-      .then((d) => setContracts(Array.isArray(d) ? d : (d.data ?? [])))
+      .then((d) => setContracts(d.data ?? []))
       .catch(() => setContracts([]))
   }, [filterCedantId])
 

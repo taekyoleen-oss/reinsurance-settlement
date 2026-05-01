@@ -1,52 +1,28 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@/lib/supabase/server'
 import { updateACStatus } from '@/lib/supabase/queries/account-currents'
+import { handleApiError, NotFoundError, ConflictError } from '@/lib/api/error-handler'
+import { withBrokerAuth } from '@/lib/api/handler'
 
-/**
- * POST /api/account-currents/[id]/cancel
- * 취소: DB 트리거가 is_locked=false 처리
- */
-export async function POST(
-  req: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
-  try {
-    const supabase = await createClient()
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) return NextResponse.json({ error: '인증이 필요합니다.' }, { status: 401 })
+/** POST /api/account-currents/[id]/cancel — 취소: DB 트리거가 is_locked=false 처리 */
+export const POST = withBrokerAuth(async ({ user, supabase }, req, ctx) => {
+  const { id } = await ctx.params
+  const db = supabase as any
+  const body = await req.json().catch(() => ({}))
 
-    const db = supabase as any
-    const { data: profileData } = await db
-      .from('rs_user_profiles')
-      .select('role')
-      .eq('id', user.id)
-      .single()
-    const profile = profileData as { role: string } | null
+  const { data: acData } = await db
+    .from('rs_account_currents')
+    .select('status')
+    .eq('id', id)
+    .single()
+  const ac = acData as { status: string } | null
 
-    if (!profile?.role?.startsWith('broker_') && profile?.role !== 'admin') {
-      return NextResponse.json({ error: '권한이 없습니다.' }, { status: 403 })
-    }
+  if (!ac) throw new NotFoundError('정산서를 찾을 수 없습니다.')
+  if (ac.status === 'cancelled') throw new ConflictError('이미 취소된 정산서입니다.')
 
-    const { id } = await params
-    const body = await req.json().catch(() => ({}))
+  const data = await updateACStatus(id, 'cancelled', user.id, {
+    notes: body.reason ?? null,
+  })
+  return NextResponse.json({ data })
+})
 
-    const { data: acData } = await db
-      .from('rs_account_currents')
-      .select('status')
-      .eq('id', id)
-      .single()
-    const ac = acData as { status: string } | null
-
-    if (!ac) return NextResponse.json({ error: '정산서를 찾을 수 없습니다.' }, { status: 404 })
-    if (ac.status === 'cancelled') {
-      return NextResponse.json({ error: '이미 취소된 정산서입니다.' }, { status: 409 })
-    }
-
-    const data = await updateACStatus(id, 'cancelled', user.id, {
-      notes: body.reason ?? null,
-    })
-    return NextResponse.json({ data })
-  } catch (err: any) {
-    return NextResponse.json({ error: err.message }, { status: 500 })
-  }
-}
+export type { NextRequest }

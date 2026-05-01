@@ -1,37 +1,4 @@
-import { adminClient } from '@/lib/supabase/admin'
-
-export type AgingBucket = 'current' | '1-30' | '31-60' | '61-90' | '90+'
-
-type ContractScope =
-  | { kind: 'all' }
-  | { kind: 'empty' }
-  | { kind: 'eq'; contractId: string }
-  | { kind: 'in'; contractIds: string[] }
-
-async function resolveContractScope(
-  db: any,
-  contractId?: string,
-  cedantId?: string
-): Promise<ContractScope> {
-  if (contractId && cedantId) {
-    const { data: c } = await db
-      .from('rs_contracts')
-      .select('cedant_id')
-      .eq('id', contractId)
-      .maybeSingle()
-    const row = c as { cedant_id: string } | null
-    if (!row || row.cedant_id !== cedantId) return { kind: 'empty' }
-    return { kind: 'eq', contractId }
-  }
-  if (contractId) return { kind: 'eq', contractId }
-  if (cedantId) {
-    const { data: crs } = await db.from('rs_contracts').select('id').eq('cedant_id', cedantId)
-    const ids = ((crs ?? []) as { id: string }[]).map((r) => r.id)
-    if (ids.length === 0) return { kind: 'empty' }
-    return { kind: 'in', contractIds: ids }
-  }
-  return { kind: 'all' }
-}
+import { createClient } from '@/lib/supabase/server'
 
 /** OutstandingKPICard 컴포넌트가 기대하는 형태 */
 export interface OutstandingResult {
@@ -67,65 +34,8 @@ export interface OutstandingDetailItem {
 }
 
 /**
- * 거래별 미청산 상세 목록 (OutstandingPage 전용)
- */
-export async function getOutstandingDetail(
-  counterpartyId?: string,
-  currencyCode?: string,
-  contractId?: string,
-  cedantId?: string
-): Promise<OutstandingDetailItem[]> {
-  const db = adminClient as any
-
-  const scope = await resolveContractScope(db, contractId, cedantId)
-  if (scope.kind === 'empty') return []
-
-  let query = db
-    .from('rs_transactions')
-    .select(`
-      counterparty_id,
-      contract_id,
-      currency_code,
-      direction,
-      amount_original,
-      due_date,
-      rs_counterparties!rs_transactions_counterparty_id_fkey(company_name_ko),
-      rs_contracts!rs_transactions_contract_id_fkey(contract_no)
-    `)
-    .eq('is_allocation_parent', false)
-    .eq('is_deleted', false)
-    .in('status', ['confirmed', 'billed'])
-    .order('due_date', { ascending: true, nullsFirst: false })
-
-  if (scope.kind === 'eq') query = query.eq('contract_id', scope.contractId)
-  if (scope.kind === 'in') query = query.in('contract_id', scope.contractIds)
-
-  if (counterpartyId) query = query.eq('counterparty_id', counterpartyId)
-  if (currencyCode)   query = query.eq('currency_code', currencyCode)
-
-  const { data: txs, error } = await query
-  if (error) throw error
-
-  return (txs ?? []).map((tx: any) => {
-    const bucket = classifyAging(tx.due_date ? new Date(tx.due_date) : null)
-    return {
-      counterparty_id:   tx.counterparty_id,
-      counterparty_name: tx.rs_counterparties?.company_name_ko ?? tx.counterparty_id,
-      contract_id:       tx.contract_id,
-      contract_no:       tx.rs_contracts?.contract_no ?? tx.contract_id,
-      currency_code:     tx.currency_code,
-      direction:         tx.direction,
-      amount:            Number(tx.amount_original),
-      due_date:          tx.due_date ?? undefined,
-      aging_bucket:      bucket,
-    }
-  })
-}
-
-/**
- * 통화별 미청산 잔액 계산
- * 대상: is_allocation_parent=false, status IN ('confirmed','billed'), is_deleted=false
- * status='settled' 거래는 이미 제외되므로 별도 settlement 차감 불필요
+ * 통화별 미청산 잔액 (rs_calc_outstanding RPC)
+ * SECURITY DEFINER 함수가 RLS를 우회하므로 adminClient 불필요
  */
 export async function calculateOutstanding(
   counterpartyId?: string,
@@ -133,141 +43,78 @@ export async function calculateOutstanding(
   contractId?: string,
   cedantId?: string
 ): Promise<OutstandingResult[]> {
-  const db = adminClient as any
-
-  const scope = await resolveContractScope(db, contractId, cedantId)
-  if (scope.kind === 'empty') return []
-
-  let query = db
-    .from('rs_transactions')
-    .select('currency_code, direction, amount_original')
-    .eq('is_allocation_parent', false)
-    .eq('is_deleted', false)
-    .in('status', ['confirmed', 'billed'])
-
-  if (scope.kind === 'eq') query = query.eq('contract_id', scope.contractId)
-  if (scope.kind === 'in') query = query.in('contract_id', scope.contractIds)
-
-  if (counterpartyId) query = query.eq('counterparty_id', counterpartyId)
-  if (currencyCode)   query = query.eq('currency_code', currencyCode)
-
-  const { data: txs, error } = await query
+  const supabase = await createClient()
+  const { data, error } = await (supabase as any).rpc('rs_calc_outstanding', {
+    p_counterparty_id: counterpartyId ?? null,
+    p_currency_code:   currencyCode   ?? null,
+    p_contract_id:     contractId     ?? null,
+    p_cedant_id:       cedantId       ?? null,
+  })
   if (error) throw error
-
-  const grouped = new Map<string, OutstandingResult>()
-
-  for (const tx of (txs ?? []) as any[]) {
-    if (!grouped.has(tx.currency_code)) {
-      grouped.set(tx.currency_code, {
-        currency: tx.currency_code,
-        receivable: 0,
-        payable: 0,
-        net: 0,
-      })
-    }
-    const item = grouped.get(tx.currency_code)!
-    if (tx.direction === 'receivable') {
-      item.receivable += Number(tx.amount_original)
-    } else {
-      item.payable += Number(tx.amount_original)
-    }
-  }
-
-  return Array.from(grouped.values()).map((item) => ({
-    ...item,
-    net: item.receivable - item.payable,
+  return (data ?? []).map((row: any) => ({
+    currency:   row.currency,
+    receivable: Number(row.receivable),
+    payable:    Number(row.payable),
+    net:        Number(row.net),
   }))
 }
 
 /**
- * due_date 기준 Aging 버킷 분류
- */
-export function classifyAging(dueDate: Date | null): AgingBucket {
-  if (!dueDate) return 'current'
-  const today = new Date()
-  today.setHours(0, 0, 0, 0)
-  const diffDays = Math.floor(
-    (today.getTime() - dueDate.getTime()) / (1000 * 60 * 60 * 24)
-  )
-  if (diffDays <= 0)  return 'current'
-  if (diffDays <= 30) return '1-30'
-  if (diffDays <= 60) return '31-60'
-  if (diffDays <= 90) return '61-90'
-  return '90+'
-}
-
-/**
- * 거래상대방 + 통화 단위 Aging 분석
- * AgingAnalysisTable 컴포넌트 형태에 맞춰 반환
+ * 거래상대방 + 통화 단위 Aging 분석 (rs_calc_aging RPC)
  */
 export async function getAgingAnalysis(
   counterpartyId?: string,
   contractId?: string,
   cedantId?: string
 ): Promise<AgingResult[]> {
-  const db = adminClient as any
-
-  const scope = await resolveContractScope(db, contractId, cedantId)
-  if (scope.kind === 'empty') return []
-
-  let query = db
-    .from('rs_transactions')
-    .select(`
-      counterparty_id,
-      currency_code,
-      direction,
-      amount_original,
-      due_date,
-      rs_counterparties!rs_transactions_counterparty_id_fkey(company_name_ko)
-    `)
-    .eq('is_allocation_parent', false)
-    .eq('is_deleted', false)
-    .in('status', ['confirmed', 'billed'])
-
-  if (scope.kind === 'eq') query = query.eq('contract_id', scope.contractId)
-  if (scope.kind === 'in') query = query.in('contract_id', scope.contractIds)
-
-  if (counterpartyId) query = query.eq('counterparty_id', counterpartyId)
-
-  const { data: txs, error } = await query
+  const supabase = await createClient()
+  const { data, error } = await (supabase as any).rpc('rs_calc_aging', {
+    p_counterparty_id: counterpartyId ?? null,
+    p_contract_id:     contractId     ?? null,
+    p_cedant_id:       cedantId       ?? null,
+  })
   if (error) throw error
-
-  const grouped = new Map<string, AgingResult>()
-
-  for (const tx of (txs ?? []) as any[]) {
-    const counterpartyName: string =
-      tx.rs_counterparties?.company_name_ko ?? tx.counterparty_id
-    const key = `${tx.counterparty_id}|${tx.currency_code}`
-
-    if (!grouped.has(key)) {
-      grouped.set(key, {
-        counterparty: counterpartyName,
-        currency: tx.currency_code,
-        current: 0,
-        days_1_30: 0,
-        days_31_60: 0,
-        days_61_90: 0,
-        days_over_90: 0,
-        total: 0,
-      })
-    }
-
-    const item = grouped.get(key)!
-    const amount =
-      tx.direction === 'receivable'
-        ? Number(tx.amount_original)
-        : -Number(tx.amount_original)
-    const bucket = classifyAging(tx.due_date ? new Date(tx.due_date) : null)
-
-    switch (bucket) {
-      case 'current': item.current    += amount; break
-      case '1-30':    item.days_1_30  += amount; break
-      case '31-60':   item.days_31_60 += amount; break
-      case '61-90':   item.days_61_90 += amount; break
-      case '90+':     item.days_over_90 += amount; break
-    }
-    item.total += amount
-  }
-
-  return Array.from(grouped.values())
+  return (data ?? []).map((row: any) => ({
+    counterparty: row.counterparty,
+    currency:     row.currency,
+    current:      Number(row.current_amount),
+    days_1_30:    Number(row.days_1_30),
+    days_31_60:   Number(row.days_31_60),
+    days_61_90:   Number(row.days_61_90),
+    days_over_90: Number(row.days_over_90),
+    total:        Number(row.total),
+  }))
 }
+
+/**
+ * 거래별 미청산 상세 목록 (rs_calc_outstanding_detail RPC)
+ */
+export async function getOutstandingDetail(
+  counterpartyId?: string,
+  currencyCode?: string,
+  contractId?: string,
+  cedantId?: string
+): Promise<OutstandingDetailItem[]> {
+  const supabase = await createClient()
+  const { data, error } = await (supabase as any).rpc('rs_calc_outstanding_detail', {
+    p_counterparty_id: counterpartyId ?? null,
+    p_currency_code:   currencyCode   ?? null,
+    p_contract_id:     contractId     ?? null,
+    p_cedant_id:       cedantId       ?? null,
+  })
+  if (error) throw error
+  return (data ?? []).map((row: any) => ({
+    counterparty_id:   row.counterparty_id,
+    counterparty_name: row.counterparty_name,
+    contract_id:       row.contract_id,
+    contract_no:       row.contract_no,
+    currency_code:     row.currency_code,
+    direction:         row.direction,
+    amount:            Number(row.amount),
+    due_date:          row.due_date ?? undefined,
+    aging_bucket:      row.aging_bucket,
+  }))
+}
+
+/** @deprecated classifyAging는 rs_calc_aging / rs_calc_outstanding_detail RPC 내부에서 처리됨 */
+export type AgingBucket = 'current' | '1-30' | '31-60' | '61-90' | '90+'

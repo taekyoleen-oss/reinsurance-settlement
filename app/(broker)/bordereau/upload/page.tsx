@@ -86,8 +86,8 @@ export default function BordereauUploadPage() {
           details: errDetails.length > 0 ? ['⚠️ 검증 오류가 있는 행은 오류 상태로 저장됨:', ...errDetails] : [],
         })
       }
-    } catch (err: any) {
-      setResult({ success: false, message: err.message })
+    } catch (err) {
+      setResult({ success: false, message: err instanceof Error ? err.message : String(err) })
     } finally {
       setUploading(false)
     }

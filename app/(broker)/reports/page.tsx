@@ -84,8 +84,8 @@ export default function ReportsPage() {
       a.click()
       URL.revokeObjectURL(url)
       toast.success('다운로드가 시작되었습니다.')
-    } catch (err: any) {
-      toast.error(err.message)
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : String(err))
     } finally {
       setLoading((l) => ({ ...l, [report.type]: false }))
     }

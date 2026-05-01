@@ -37,8 +37,8 @@ export default function NewAccountCurrentPage() {
       fetch('/api/contracts').then((r) => r.json()),
       fetch('/api/counterparties').then((r) => r.json()),
     ]).then(([cd, cpd]) => {
-      setContracts(Array.isArray(cd) ? cd : (cd.data ?? []))
-      setCounterparties(Array.isArray(cpd) ? cpd : (cpd.data ?? []))
+      setContracts(cd.data ?? [])
+      setCounterparties(cpd.data ?? [])
     }).catch(() => {})
   }, [])
 
@@ -133,8 +133,8 @@ export default function NewAccountCurrentPage() {
       if (!res.ok) throw new Error(data.error ?? '생성 실패')
       toast.success('정산서가 생성되었습니다.')
       router.push(`/account-currents/${data.data?.id ?? data.id}`)
-    } catch (err: any) {
-      toast.error(err.message)
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : String(err))
     } finally {
       setLoading(false)
     }

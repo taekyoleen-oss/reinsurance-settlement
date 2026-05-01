@@ -1,5 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
+import { handleApiError, NotFoundError } from '@/lib/api/error-handler'
+import { withBrokerSchema } from '@/lib/api/handler'
+import { CounterpartyUpdateSchema } from '@/lib/api/schemas/counterparty'
 
 export async function GET(
   _req: NextRequest,
@@ -13,34 +16,23 @@ export async function GET(
       .select('*')
       .eq('id', id)
       .single()
-    if (error) return NextResponse.json({ error: error.message }, { status: 404 })
+    if (error || !data) throw new NotFoundError('거래상대방을 찾을 수 없습니다.')
     return NextResponse.json({ data })
-  } catch (err: any) {
-    return NextResponse.json({ error: err.message }, { status: 500 })
+  } catch (err) {
+    return handleApiError(err)
   }
 }
 
-export async function PATCH(
-  req: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
-  try {
-    const { id } = await params
-    const supabase = await createClient()
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) return NextResponse.json({ error: '인증이 필요합니다.' }, { status: 401 })
+export const PATCH = withBrokerSchema(CounterpartyUpdateSchema, async (body, _auth, _req, ctx) => {
+  const { id } = await ctx.params
+  const supabase = await createClient()
+  const { data, error } = await (supabase as any)
+    .from('rs_counterparties')
+    .update({ ...body, updated_at: new Date().toISOString() })
+    .eq('id', id)
+    .select()
+    .single()
 
-    const body = await req.json()
-    const { data, error } = await (supabase as any)
-      .from('rs_counterparties')
-      .update({ ...body, updated_at: new Date().toISOString() })
-      .eq('id', id)
-      .select()
-      .single()
-
-    if (error) throw error
-    return NextResponse.json({ data })
-  } catch (err: any) {
-    return NextResponse.json({ error: err.message }, { status: 500 })
-  }
-}
+  if (error) throw error
+  return NextResponse.json({ data })
+})

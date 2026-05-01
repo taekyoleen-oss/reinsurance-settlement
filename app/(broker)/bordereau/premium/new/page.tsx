@@ -99,8 +99,8 @@ export default function PremiumBordereauNewPage() {
           ? `/bordereau?contractId=${encodeURIComponent(form.contract_id)}`
           : '/bordereau'
       router.push(back)
-    } catch (err: any) {
-      setError(err.message)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : String(err))
     } finally {
       setSaving(false)
     }

@@ -46,8 +46,8 @@ export default function TransactionDetailPage() {
       }
       toast.success('거래가 삭제되었습니다.')
       router.push('/transactions')
-    } catch (err: any) {
-      toast.error(err.message)
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : String(err))
     } finally {
       setDeleting(false)
     }

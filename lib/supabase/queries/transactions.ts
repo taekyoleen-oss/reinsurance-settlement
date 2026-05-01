@@ -1,6 +1,9 @@
 import { createClient } from '@/lib/supabase/server'
 import type { TransactionRow, TransactionInsert, TransactionUpdate } from '@/types/database'
 import { validateExchangeRate } from '@/lib/utils/exchange-rate'
+import type { PaginationParams, PagedResult } from './types'
+
+export type { PaginationParams, PagedResult }
 
 export interface TransactionFilters {
   counterpartyId?: string
@@ -13,47 +16,38 @@ export interface TransactionFilters {
 }
 
 /**
- * 거래 목록 조회 (필터 지원)
+ * 거래 목록 조회 (필터 + 페이지네이션 지원)
  */
 export async function getTransactions(
-  filters: TransactionFilters = {}
-): Promise<TransactionRow[]> {
+  filters: TransactionFilters = {},
+  pagination?: PaginationParams
+): Promise<PagedResult<TransactionRow>> {
   const supabase = await createClient()
 
-  let query = supabase
+  let query = (supabase as any)
     .from('rs_transactions')
-    .select('*')
+    .select('*', { count: 'exact' })
     .order('transaction_date', { ascending: false })
     .order('created_at', { ascending: false })
 
-  if (filters.counterpartyId) {
-    query = query.eq('counterparty_id', filters.counterpartyId)
-  }
-  if (filters.contractId) {
-    query = query.eq('contract_id', filters.contractId)
-  }
-  if (filters.status) {
-    query = query.eq('status', filters.status)
-  }
-  if (filters.transactionType) {
-    query = query.eq('transaction_type', filters.transactionType)
-  }
-  if (filters.dateFrom) {
-    query = query.gte('transaction_date', filters.dateFrom)
-  }
-  if (filters.dateTo) {
-    query = query.lte('transaction_date', filters.dateTo)
-  }
+  if (filters.counterpartyId) query = query.eq('counterparty_id', filters.counterpartyId)
+  if (filters.contractId)     query = query.eq('contract_id', filters.contractId)
+  if (filters.status)         query = query.eq('status', filters.status)
+  if (filters.transactionType) query = query.eq('transaction_type', filters.transactionType)
+  if (filters.dateFrom)       query = query.gte('transaction_date', filters.dateFrom)
+  if (filters.dateTo)         query = query.lte('transaction_date', filters.dateTo)
 
-  // 기본적으로 삭제된 항목 제외
   const showDeleted = filters.isDeleted === true
-  if (!showDeleted) {
-    query = query.eq('is_deleted', false)
+  if (!showDeleted) query = query.eq('is_deleted', false)
+
+  if (pagination) {
+    const from = (pagination.page - 1) * pagination.pageSize
+    query = query.range(from, from + pagination.pageSize - 1)
   }
 
-  const { data, error } = await query
+  const { data, count, error } = await query
   if (error) throw error
-  return data ?? []
+  return { data: data ?? [], total: count ?? (data?.length ?? 0) }
 }
 
 /**

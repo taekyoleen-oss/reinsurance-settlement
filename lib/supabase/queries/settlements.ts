@@ -1,6 +1,9 @@
 import { createClient } from '@/lib/supabase/server'
 import type { SettlementRow, SettlementInsert, SettlementMatchRow } from '@/types/database'
 import { validateExchangeRate } from '@/lib/utils/exchange-rate'
+import type { PaginationParams, PagedResult } from './types'
+
+export type { PaginationParams, PagedResult }
 
 export interface SettlementFilters {
   counterpartyId?: string
@@ -11,30 +14,33 @@ export interface SettlementFilters {
 }
 
 /**
- * 결제 목록 조회
+ * 결제 목록 조회 (필터 + 페이지네이션 지원)
  */
 export async function getSettlements(
-  filters: SettlementFilters = {}
-): Promise<SettlementRow[]> {
+  filters: SettlementFilters = {},
+  pagination?: PaginationParams
+): Promise<PagedResult<SettlementRow>> {
   const supabase = await createClient()
 
-  let query = supabase
+  let query = (supabase as any)
     .from('rs_settlements')
-    .select('*')
+    .select('*', { count: 'exact' })
     .order('settlement_date', { ascending: false })
 
-  if (filters.counterpartyId)
-    query = query.eq('counterparty_id', filters.counterpartyId)
-  if (filters.currencyCode)
-    query = query.eq('currency_code', filters.currencyCode)
-  if (filters.matchStatus)
-    query = query.eq('match_status', filters.matchStatus)
-  if (filters.dateFrom) query = query.gte('settlement_date', filters.dateFrom)
-  if (filters.dateTo) query = query.lte('settlement_date', filters.dateTo)
+  if (filters.counterpartyId) query = query.eq('counterparty_id', filters.counterpartyId)
+  if (filters.currencyCode)   query = query.eq('currency_code', filters.currencyCode)
+  if (filters.matchStatus)    query = query.eq('match_status', filters.matchStatus)
+  if (filters.dateFrom)       query = query.gte('settlement_date', filters.dateFrom)
+  if (filters.dateTo)         query = query.lte('settlement_date', filters.dateTo)
 
-  const { data, error } = await query
+  if (pagination) {
+    const from = (pagination.page - 1) * pagination.pageSize
+    query = query.range(from, from + pagination.pageSize - 1)
+  }
+
+  const { data, count, error } = await query
   if (error) throw error
-  return data ?? []
+  return { data: data ?? [], total: count ?? (data?.length ?? 0) }
 }
 
 /**

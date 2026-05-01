@@ -53,7 +53,7 @@ export default function CounterpartiesPage() {
     setLoading(true)
     fetch('/api/counterparties')
       .then((r) => r.json())
-      .then((d) => setCounterparties(Array.isArray(d) ? d : (d.data ?? [])))
+      .then((d) => setCounterparties(d.data ?? []))
       .catch(() => {})
       .finally(() => setLoading(false))
   }
@@ -93,8 +93,8 @@ export default function CounterpartiesPage() {
       setEditTarget(null)
       resetForm()
       fetchCounterparties()
-    } catch (err: any) {
-      toast.error(err.message)
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : String(err))
     } finally {
       setFormLoading(false)
     }

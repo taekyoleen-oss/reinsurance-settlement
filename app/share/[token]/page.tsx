@@ -21,7 +21,7 @@ async function getACData(acId: string): Promise<{ ac: AccountCurrentRow | null; 
   const itemsData = itemsRes?.ok ? await itemsRes.json() : null
   return {
     ac: acData?.data ?? acData,
-    items: Array.isArray(itemsData) ? itemsData : (itemsData?.data ?? []),
+    items: itemsData?.data ?? [],
   }
 }
 

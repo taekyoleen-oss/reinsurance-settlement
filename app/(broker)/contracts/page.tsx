@@ -51,7 +51,7 @@ export default function ContractsPage() {
       .then(async (r) => {
         const d = await r.json()
         if (!r.ok) throw new Error(d.error ?? '계약 목록을 불러오지 못했습니다.')
-        setContracts(Array.isArray(d) ? d : (d.data ?? []))
+        setContracts(d.data ?? [])
       })
       .catch((e: Error) => {
         setContracts([])

@@ -26,8 +26,8 @@ export default function LoginPage() {
       if (error) throw new Error(error.message)
       toast.success('로그인 되었습니다.')
       router.push('/dashboard')
-    } catch (err: any) {
-      toast.error(err.message ?? '로그인 실패')
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : '로그인 실패')
     } finally {
       setLoading(false)
     }

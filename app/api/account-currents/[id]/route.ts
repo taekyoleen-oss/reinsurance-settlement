@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getAccountCurrentById } from '@/lib/supabase/queries/account-currents'
+import { handleApiError, NotFoundError } from '@/lib/api/error-handler'
 
 export async function GET(
   _req: NextRequest,
@@ -8,9 +9,9 @@ export async function GET(
   try {
     const { id } = await params
     const data = await getAccountCurrentById(id)
-    if (!data) return NextResponse.json({ error: '정산서를 찾을 수 없습니다.' }, { status: 404 })
+    if (!data) throw new NotFoundError('정산서를 찾을 수 없습니다.')
     return NextResponse.json({ data })
-  } catch (err: any) {
-    return NextResponse.json({ error: err.message }, { status: 500 })
+  } catch (err) {
+    return handleApiError(err)
   }
 }

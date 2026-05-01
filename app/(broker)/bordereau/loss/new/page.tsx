@@ -100,8 +100,8 @@ export default function LossBordereauNewPage() {
       q.set('tab', 'loss')
       if (form.contract_id) q.set('contractId', form.contract_id)
       router.push(`/bordereau?${q.toString()}`)
-    } catch (err: any) {
-      setError(err.message)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : String(err))
     } finally {
       setSaving(false)
     }

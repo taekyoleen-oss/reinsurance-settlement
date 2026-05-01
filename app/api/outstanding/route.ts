@@ -4,6 +4,7 @@ import {
   getAgingData,
   getOutstandingDetailData,
 } from '@/lib/supabase/queries/outstanding'
+import { handleApiError } from '@/lib/api/error-handler'
 
 export const dynamic = 'force-dynamic'
 
@@ -44,7 +45,7 @@ export async function GET(req: NextRequest) {
       cedantId
     )
     return NextResponse.json({ data: outstanding })
-  } catch (err: any) {
-    return NextResponse.json({ error: err.message }, { status: 500 })
+  } catch (err) {
+    return handleApiError(err)
   }
 }

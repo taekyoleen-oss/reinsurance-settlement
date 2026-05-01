@@ -37,7 +37,7 @@ export default function ExchangeRatesPage() {
     fetch(`/api/exchange-rates${params}`)
       .then((r) => r.json())
       .then((d) => {
-        const list = Array.isArray(d) ? d : (d.data ?? [])
+        const list = d.data ?? []
         setRates(list)
         const curs = Array.from(new Set(list.map((r: ExchangeRateRow) => r.from_currency))) as string[]
         setCurrencies(curs)
@@ -63,8 +63,8 @@ export default function ExchangeRatesPage() {
       toast.success('환율이 등록되었습니다.')
       setShowForm(false)
       fetchRates()
-    } catch (err: any) {
-      toast.error(err.message)
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : String(err))
     } finally {
       setFormLoading(false)
     }
