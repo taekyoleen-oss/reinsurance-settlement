@@ -82,6 +82,7 @@ export function OutstandingContent({ initialContracts, initialCounterparties }: 
   const [items, setItems] = useState<OutstandingItem[]>([])
   const [loading, setLoading] = useState(true)
   const [filterCurrency, setFilterCurrency] = useState('all')
+  const [filterDirection, setFilterDirection] = useState('all')
   const [filterCedantId, setFilterCedantId] = useState('')
   const [filterContractId, setFilterContractId] = useState('all')
   const [filterCounterpartyId, setFilterCounterpartyId] = useState('all')
@@ -136,10 +137,25 @@ export function OutstandingContent({ initialContracts, initialCounterparties }: 
 
   const filtered = items.filter((item) => {
     if (filterCurrency !== 'all' && item.currency_code !== filterCurrency) return false
+    if (filterDirection !== 'all' && item.direction !== filterDirection) return false
     return true
   })
 
   const currencies = Array.from(new Set(items.map((i) => i.currency_code)))
+
+  // 통화가 선택된 경우에만 합계 계산
+  const currencySelected = filterCurrency !== 'all'
+  const byCurrency = currencySelected ? items.filter((i) => i.currency_code === filterCurrency) : []
+  const receivableTotal = byCurrency
+    .filter((i) => i.direction === 'receivable')
+    .reduce((s, i) => s + i.amount, 0)
+  const payableTotal = byCurrency
+    .filter((i) => i.direction === 'payable')
+    .reduce((s, i) => s + i.amount, 0)
+  const showReceivable =
+    currencySelected && (filterDirection === 'all' || filterDirection === 'receivable')
+  const showPayable =
+    currencySelected && (filterDirection === 'all' || filterDirection === 'payable')
 
   // 가상화 — 100행 초과 시
   const parentRef = useRef<HTMLDivElement>(null)
@@ -317,8 +333,8 @@ export function OutstandingContent({ initialContracts, initialCounterparties }: 
           />
         </div>
 
-        {/* 상세 통화 필터 */}
-        <div className="flex gap-3">
+        {/* 상세 통화 + 방향 필터 & 합계 */}
+        <div className="flex flex-wrap items-center gap-3">
           <Select value={filterCurrency} onValueChange={setFilterCurrency}>
             <SelectTrigger className="w-28">
               <SelectValue />
@@ -332,6 +348,43 @@ export function OutstandingContent({ initialContracts, initialCounterparties }: 
               ))}
             </SelectContent>
           </Select>
+          <Select
+            value={filterDirection}
+            onValueChange={setFilterDirection}
+            disabled={!currencySelected}
+          >
+            <SelectTrigger className="w-28">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">전체 방향</SelectItem>
+              <SelectItem value="receivable">수취</SelectItem>
+              <SelectItem value="payable">지급</SelectItem>
+            </SelectContent>
+          </Select>
+
+          {/* 통화 선택 시 합계 표시 */}
+          {currencySelected && (
+            <div className="ml-2 flex items-center gap-4">
+              {showReceivable && (
+                <div className="flex items-center gap-1.5">
+                  <span className="text-xs text-[var(--text-muted)]">수취 합계</span>
+                  <span className="font-mono text-sm font-semibold text-success tabular-nums">
+                    {receivableTotal.toLocaleString()}
+                  </span>
+                </div>
+              )}
+              {showReceivable && showPayable && <span className="text-[var(--text-muted)]">|</span>}
+              {showPayable && (
+                <div className="flex items-center gap-1.5">
+                  <span className="text-xs text-[var(--text-muted)]">지급 합계</span>
+                  <span className="font-mono text-sm font-semibold text-warning-urgent tabular-nums">
+                    {payableTotal.toLocaleString()}
+                  </span>
+                </div>
+              )}
+            </div>
+          )}
         </div>
 
         {loading ? (
