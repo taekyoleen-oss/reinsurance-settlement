@@ -11,6 +11,7 @@ import {
   TableRow,
 } from '@/components/ui/table'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { TableExportButton } from '@/components/shared/TableExportButton'
 import type { ReconciliationItemWithRelations, ReconciliationStatus } from '@/types'
 
 function fmt(n: number) {
@@ -49,8 +50,40 @@ export function ReconciliationGrid({ contractId, counterpartyId }: Reconciliatio
 
   return (
     <Card>
-      <CardHeader>
+      <CardHeader className="flex flex-row items-center justify-between pb-2">
         <CardTitle>대사 현황</CardTitle>
+        <TableExportButton
+          headers={[
+            '기간(시작)',
+            '기간(종료)',
+            '거래상대방',
+            '계약',
+            '유형',
+            '브로커 금액',
+            '상대방 금액',
+            '차이',
+            '상태',
+          ]}
+          rows={items.map((item) => {
+            const diff =
+              item.difference ??
+              (item.counterparty_claimed_amount != null
+                ? item.broker_amount - item.counterparty_claimed_amount
+                : '')
+            return [
+              format(new Date(item.period_from), 'yyyy-MM-dd'),
+              format(new Date(item.period_to), 'yyyy-MM-dd'),
+              item.counterparty?.company_name_ko ?? '',
+              item.contract?.contract_no ?? '',
+              item.transaction_type,
+              item.broker_amount,
+              item.counterparty_claimed_amount ?? '',
+              diff,
+              STATUS_STYLE[item.status].label,
+            ]
+          })}
+          filename="대사현황"
+        />
       </CardHeader>
       <CardContent className="p-0">
         {loading ? (

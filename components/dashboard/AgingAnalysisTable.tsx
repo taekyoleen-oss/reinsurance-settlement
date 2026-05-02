@@ -10,6 +10,7 @@ import {
   TableRow,
 } from '@/components/ui/table'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { TableExportButton } from '@/components/shared/TableExportButton'
 
 interface AgingRow {
   counterparty: string
@@ -78,8 +79,31 @@ export function AgingAnalysisTable({
 
   return (
     <Card>
-      <CardHeader>
+      <CardHeader className="flex flex-row items-center justify-between pb-2">
         <CardTitle>Aging 분석</CardTitle>
+        <TableExportButton
+          headers={[
+            '거래상대방',
+            '통화',
+            'Current',
+            '1-30일',
+            '31-60일',
+            '61-90일',
+            '90일+',
+            '합계',
+          ]}
+          rows={rows.map((row) => [
+            row.counterparty,
+            row.currency,
+            row.current,
+            row.days_1_30,
+            row.days_31_60,
+            row.days_61_90,
+            row.days_over_90,
+            row.total,
+          ])}
+          filename="Aging분석"
+        />
       </CardHeader>
       <CardContent className="p-0">
         {loading ? (

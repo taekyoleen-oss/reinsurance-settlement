@@ -22,6 +22,7 @@ import {
   TableRow,
 } from '@/components/ui/table'
 import { StatusBadge } from '@/components/shared/StatusBadge'
+import { TableExportButton } from '@/components/shared/TableExportButton'
 import { CedantFilterSelect } from '@/components/contracts/CedantFilterSelect'
 import { Plus } from 'lucide-react'
 import { useContracts, useCounterparties } from '@/hooks/use-reference-data'
@@ -209,69 +210,98 @@ export function AccountCurrentsList({ initialContracts, initialCounterparties }:
           로딩 중...
         </div>
       ) : (
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>정산서 번호</TableHead>
-              <TableHead>특약/계약</TableHead>
-              <TableHead>회사(수재사)</TableHead>
-              <TableHead>기간</TableHead>
-              <TableHead className="text-right">Net 잔액</TableHead>
-              <TableHead>방향</TableHead>
-              <TableHead>상태</TableHead>
-              <TableHead>발행일</TableHead>
-              <TableHead className="text-right">액션</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {filtered.map((ac) => (
-              <TableRow key={ac.id}>
-                <TableCell className="whitespace-nowrap font-mono text-xs">
-                  {ac.ac_no ?? ac.id.slice(0, 8)}
-                </TableCell>
-                <TableCell className="whitespace-nowrap text-xs">
-                  {contracts.find((c) => c.id === ac.contract_id)?.contract_no ??
-                    ac.contract_id.slice(0, 8)}
-                </TableCell>
-                <TableCell className="whitespace-nowrap min-w-[120px] text-xs">
-                  {counterparties.find((cp) => cp.id === ac.counterparty_id)?.company_name_ko ??
-                    ac.counterparty_id.slice(0, 8)}
-                </TableCell>
-                <TableCell className="whitespace-nowrap text-xs text-[var(--text-secondary)]">
-                  {ac.period_from} ~ {ac.period_to}
-                </TableCell>
-                <TableCell className="text-right font-mono text-sm text-[var(--text-number)]">
-                  {ac.net_balance?.toLocaleString()}
-                </TableCell>
-                <TableCell className="text-xs">
-                  {ac.direction === 'to_reinsurer' ? '→ 수재사' : '← 출재사'}
-                </TableCell>
-                <TableCell>
-                  <StatusBadge status={ac.status} />
-                </TableCell>
-                <TableCell className="text-xs text-[var(--text-secondary)]">
-                  {ac.issued_at ? format(new Date(ac.issued_at), 'yyyy-MM-dd') : '-'}
-                </TableCell>
-                <TableCell className="text-right">
-                  <Link href={`/account-currents/${ac.id}`}>
-                    <Button size="sm" variant="ghost">
-                      상세
-                    </Button>
-                  </Link>
-                </TableCell>
-              </TableRow>
-            ))}
-            {filtered.length === 0 && (
+        <div className="space-y-2">
+          <div className="flex justify-end">
+            <TableExportButton
+              headers={[
+                '정산서 번호',
+                '특약/계약',
+                '회사(수재사)',
+                '기간(시작)',
+                '기간(종료)',
+                'Net 잔액',
+                '방향',
+                '상태',
+                '발행일',
+              ]}
+              rows={filtered.map((ac) => [
+                ac.ac_no ?? '',
+                contracts.find((c) => c.id === ac.contract_id)?.contract_no ?? '',
+                counterparties.find((cp) => cp.id === ac.counterparty_id)?.company_name_ko ?? '',
+                ac.period_from,
+                ac.period_to,
+                ac.net_balance ?? '',
+                ac.direction === 'to_reinsurer' ? '→ 수재사' : '← 출재사',
+                ac.status,
+                ac.issued_at ? format(new Date(ac.issued_at), 'yyyy-MM-dd') : '',
+              ])}
+              filename="정산서목록"
+            />
+          </div>
+          <Table>
+            <TableHeader>
               <TableRow>
-                <TableCell colSpan={9} className="text-center text-[var(--text-muted)] py-8">
-                  {acs.length === 0
-                    ? '정산서 데이터가 없습니다.'
-                    : '검색/필터 조건에 맞는 정산서가 없습니다.'}
-                </TableCell>
+                <TableHead>정산서 번호</TableHead>
+                <TableHead>특약/계약</TableHead>
+                <TableHead>회사(수재사)</TableHead>
+                <TableHead>기간</TableHead>
+                <TableHead className="text-right">Net 잔액</TableHead>
+                <TableHead>방향</TableHead>
+                <TableHead>상태</TableHead>
+                <TableHead>발행일</TableHead>
+                <TableHead className="text-right">액션</TableHead>
               </TableRow>
-            )}
-          </TableBody>
-        </Table>
+            </TableHeader>
+            <TableBody>
+              {filtered.map((ac) => (
+                <TableRow key={ac.id}>
+                  <TableCell className="whitespace-nowrap font-mono text-xs">
+                    {ac.ac_no ?? ac.id.slice(0, 8)}
+                  </TableCell>
+                  <TableCell className="whitespace-nowrap text-xs">
+                    {contracts.find((c) => c.id === ac.contract_id)?.contract_no ??
+                      ac.contract_id.slice(0, 8)}
+                  </TableCell>
+                  <TableCell className="whitespace-nowrap min-w-[120px] text-xs">
+                    {counterparties.find((cp) => cp.id === ac.counterparty_id)?.company_name_ko ??
+                      ac.counterparty_id.slice(0, 8)}
+                  </TableCell>
+                  <TableCell className="whitespace-nowrap text-xs text-[var(--text-secondary)]">
+                    {ac.period_from} ~ {ac.period_to}
+                  </TableCell>
+                  <TableCell className="text-right font-mono text-sm text-[var(--text-number)]">
+                    {ac.net_balance?.toLocaleString()}
+                  </TableCell>
+                  <TableCell className="text-xs">
+                    {ac.direction === 'to_reinsurer' ? '→ 수재사' : '← 출재사'}
+                  </TableCell>
+                  <TableCell>
+                    <StatusBadge status={ac.status} />
+                  </TableCell>
+                  <TableCell className="text-xs text-[var(--text-secondary)]">
+                    {ac.issued_at ? format(new Date(ac.issued_at), 'yyyy-MM-dd') : '-'}
+                  </TableCell>
+                  <TableCell className="text-right">
+                    <Link href={`/account-currents/${ac.id}`}>
+                      <Button size="sm" variant="ghost">
+                        상세
+                      </Button>
+                    </Link>
+                  </TableCell>
+                </TableRow>
+              ))}
+              {filtered.length === 0 && (
+                <TableRow>
+                  <TableCell colSpan={9} className="text-center text-[var(--text-muted)] py-8">
+                    {acs.length === 0
+                      ? '정산서 데이터가 없습니다.'
+                      : '검색/필터 조건에 맞는 정산서가 없습니다.'}
+                  </TableCell>
+                </TableRow>
+              )}
+            </TableBody>
+          </Table>
+        </div>
       )}
     </div>
   )

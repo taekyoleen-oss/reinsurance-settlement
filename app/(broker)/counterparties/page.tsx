@@ -6,16 +6,31 @@ import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import {
-  Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
 } from '@/components/ui/table'
 import { Badge } from '@/components/ui/badge'
+import { TableExportButton } from '@/components/shared/TableExportButton'
 import { Plus, Pencil } from 'lucide-react'
 import type { CounterpartyRow } from '@/types'
 
-const fetcher = (url: string) => fetch(url).then((r) => r.json()).then((d) => d.data ?? [])
+const fetcher = (url: string) =>
+  fetch(url)
+    .then((r) => r.json())
+    .then((d) => d.data ?? [])
 
 const TYPE_LABELS: Record<string, string> = {
   reinsurer: '수재사',
@@ -26,7 +41,10 @@ const TYPE_LABELS: Record<string, string> = {
 const CP_URL = '/api/counterparties'
 
 export default function CounterpartiesPage() {
-  const { data: counterparties = [], isLoading: loading } = useSWR<CounterpartyRow[]>(CP_URL, fetcher)
+  const { data: counterparties = [], isLoading: loading } = useSWR<CounterpartyRow[]>(
+    CP_URL,
+    fetcher
+  )
   const [showForm, setShowForm] = useState(false)
   const [editTarget, setEditTarget] = useState<CounterpartyRow | null>(null)
   const [formLoading, setFormLoading] = useState(false)
@@ -43,16 +61,16 @@ export default function CounterpartiesPage() {
     default_currency: '',
   })
 
-  const resetForm = () => setForm({
-    company_code: '',
-    company_name_ko: '',
-    company_name_en: '',
-    company_type: 'reinsurer',
-    country_code: '',
-    contact_email: '',
-    default_currency: '',
-  })
-
+  const resetForm = () =>
+    setForm({
+      company_code: '',
+      company_name_ko: '',
+      company_name_en: '',
+      company_type: 'reinsurer',
+      country_code: '',
+      contact_email: '',
+      default_currency: '',
+    })
 
   const openEdit = (cp: CounterpartyRow) => {
     setEditTarget(cp)
@@ -70,7 +88,10 @@ export default function CounterpartiesPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!form.company_name_ko) { toast.error('회사명(한글)을 입력하세요.'); return }
+    if (!form.company_name_ko) {
+      toast.error('회사명(한글)을 입력하세요.')
+      return
+    }
     setFormLoading(true)
     try {
       const url = editTarget ? `/api/counterparties/${editTarget.id}` : '/api/counterparties'
@@ -96,7 +117,12 @@ export default function CounterpartiesPage() {
 
   const filtered = counterparties.filter((cp) => {
     if (filterType !== 'all' && cp.company_type !== filterType) return false
-    if (search && !cp.company_name_ko.toLowerCase().includes(search.toLowerCase()) && !cp.company_name_en.toLowerCase().includes(search.toLowerCase())) return false
+    if (
+      search &&
+      !cp.company_name_ko.toLowerCase().includes(search.toLowerCase()) &&
+      !cp.company_name_en.toLowerCase().includes(search.toLowerCase())
+    )
+      return false
     return true
   })
 
@@ -105,9 +131,17 @@ export default function CounterpartiesPage() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-[var(--text-primary)]">거래상대방 관리</h1>
-          <p className="text-sm text-[var(--text-secondary)] mt-1">출재사, 수재사, 브로커 마스터 관리</p>
+          <p className="text-sm text-[var(--text-secondary)] mt-1">
+            출재사, 수재사, 브로커 마스터 관리
+          </p>
         </div>
-        <Button onClick={() => { setEditTarget(null); resetForm(); setShowForm(!showForm) }}>
+        <Button
+          onClick={() => {
+            setEditTarget(null)
+            resetForm()
+            setShowForm(!showForm)
+          }}
+        >
           <Plus className="h-4 w-4 mr-1" />
           거래상대방 등록
         </Button>
@@ -116,18 +150,30 @@ export default function CounterpartiesPage() {
       {showForm && (
         <Card>
           <CardHeader>
-            <CardTitle className="text-base">{editTarget ? '거래상대방 수정' : '거래상대방 등록'}</CardTitle>
+            <CardTitle className="text-base">
+              {editTarget ? '거래상대방 수정' : '거래상대방 등록'}
+            </CardTitle>
           </CardHeader>
           <CardContent>
             <form onSubmit={handleSubmit} className="grid grid-cols-2 gap-4">
               <div className="space-y-1.5">
                 <Label>회사 코드</Label>
-                <Input value={form.company_code} onChange={(e) => setForm((f) => ({ ...f, company_code: e.target.value }))} placeholder="ABC-001" className="font-mono" />
+                <Input
+                  value={form.company_code}
+                  onChange={(e) => setForm((f) => ({ ...f, company_code: e.target.value }))}
+                  placeholder="ABC-001"
+                  className="font-mono"
+                />
               </div>
               <div className="space-y-1.5">
                 <Label>유형</Label>
-                <Select value={form.company_type} onValueChange={(v) => setForm((f) => ({ ...f, company_type: v }))}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
+                <Select
+                  value={form.company_type}
+                  onValueChange={(v) => setForm((f) => ({ ...f, company_type: v }))}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="reinsurer">수재사</SelectItem>
                     <SelectItem value="cedant">출재사</SelectItem>
@@ -137,27 +183,57 @@ export default function CounterpartiesPage() {
               </div>
               <div className="space-y-1.5">
                 <Label>회사명 (한글) *</Label>
-                <Input value={form.company_name_ko} onChange={(e) => setForm((f) => ({ ...f, company_name_ko: e.target.value }))} />
+                <Input
+                  value={form.company_name_ko}
+                  onChange={(e) => setForm((f) => ({ ...f, company_name_ko: e.target.value }))}
+                />
               </div>
               <div className="space-y-1.5">
                 <Label>회사명 (영문)</Label>
-                <Input value={form.company_name_en} onChange={(e) => setForm((f) => ({ ...f, company_name_en: e.target.value }))} />
+                <Input
+                  value={form.company_name_en}
+                  onChange={(e) => setForm((f) => ({ ...f, company_name_en: e.target.value }))}
+                />
               </div>
               <div className="space-y-1.5">
                 <Label>국가 코드</Label>
-                <Input value={form.country_code} onChange={(e) => setForm((f) => ({ ...f, country_code: e.target.value.toUpperCase() }))} placeholder="KR, US..." className="w-24 font-mono" maxLength={2} />
+                <Input
+                  value={form.country_code}
+                  onChange={(e) =>
+                    setForm((f) => ({ ...f, country_code: e.target.value.toUpperCase() }))
+                  }
+                  placeholder="KR, US..."
+                  className="w-24 font-mono"
+                  maxLength={2}
+                />
               </div>
               <div className="space-y-1.5">
                 <Label>기본 통화</Label>
-                <Input value={form.default_currency} onChange={(e) => setForm((f) => ({ ...f, default_currency: e.target.value.toUpperCase() }))} placeholder="KRW, USD..." className="w-24 font-mono" maxLength={3} />
+                <Input
+                  value={form.default_currency}
+                  onChange={(e) =>
+                    setForm((f) => ({ ...f, default_currency: e.target.value.toUpperCase() }))
+                  }
+                  placeholder="KRW, USD..."
+                  className="w-24 font-mono"
+                  maxLength={3}
+                />
               </div>
               <div className="col-span-2 space-y-1.5">
                 <Label>이메일</Label>
-                <Input type="email" value={form.contact_email} onChange={(e) => setForm((f) => ({ ...f, contact_email: e.target.value }))} />
+                <Input
+                  type="email"
+                  value={form.contact_email}
+                  onChange={(e) => setForm((f) => ({ ...f, contact_email: e.target.value }))}
+                />
               </div>
               <div className="col-span-2 flex gap-2">
-                <Button type="submit" disabled={formLoading}>{formLoading ? '저장 중...' : '저장'}</Button>
-                <Button type="button" variant="ghost" onClick={() => setShowForm(false)}>취소</Button>
+                <Button type="submit" disabled={formLoading}>
+                  {formLoading ? '저장 중...' : '저장'}
+                </Button>
+                <Button type="button" variant="ghost" onClick={() => setShowForm(false)}>
+                  취소
+                </Button>
               </div>
             </form>
           </CardContent>
@@ -165,9 +241,16 @@ export default function CounterpartiesPage() {
       )}
 
       <div className="flex gap-3">
-        <Input placeholder="회사명 검색..." value={search} onChange={(e) => setSearch(e.target.value)} className="w-56" />
+        <Input
+          placeholder="회사명 검색..."
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          className="w-56"
+        />
         <Select value={filterType} onValueChange={setFilterType}>
-          <SelectTrigger className="w-28"><SelectValue /></SelectTrigger>
+          <SelectTrigger className="w-28">
+            <SelectValue />
+          </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">전체</SelectItem>
             <SelectItem value="reinsurer">수재사</SelectItem>
@@ -178,48 +261,80 @@ export default function CounterpartiesPage() {
       </div>
 
       {loading ? (
-        <div className="p-8 text-center text-sm text-[var(--text-muted)] animate-pulse">로딩 중...</div>
+        <div className="p-8 text-center text-sm text-[var(--text-muted)] animate-pulse">
+          로딩 중...
+        </div>
       ) : (
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>코드</TableHead>
-              <TableHead>회사명 (KO)</TableHead>
-              <TableHead>회사명 (EN)</TableHead>
-              <TableHead>유형</TableHead>
-              <TableHead>국가</TableHead>
-              <TableHead>이메일</TableHead>
-              <TableHead className="text-right">액션</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {filtered.map((cp) => (
-              <TableRow key={cp.id}>
-                <TableCell className="font-mono text-xs">{cp.company_code}</TableCell>
-                <TableCell className="font-medium">{cp.company_name_ko}</TableCell>
-                <TableCell className="text-sm text-[var(--text-secondary)]">{cp.company_name_en}</TableCell>
-                <TableCell>
-                  <Badge variant={cp.company_type === 'reinsurer' ? 'accent' : cp.company_type === 'cedant' ? 'default' : 'default'}>
-                    {TYPE_LABELS[cp.company_type] ?? cp.company_type}
-                  </Badge>
-                </TableCell>
-                <TableCell className="text-xs font-mono">{cp.country_code ?? '-'}</TableCell>
-                <TableCell className="text-xs text-[var(--text-secondary)]">{cp.contact_email ?? '-'}</TableCell>
-                <TableCell className="text-right">
-                  <Button size="sm" variant="ghost" onClick={() => openEdit(cp)}>
-                    <Pencil className="h-3 w-3 mr-1" />
-                    수정
-                  </Button>
-                </TableCell>
-              </TableRow>
-            ))}
-            {filtered.length === 0 && (
+        <div className="space-y-2">
+          <div className="flex justify-end">
+            <TableExportButton
+              headers={['코드', '회사명(KO)', '회사명(EN)', '유형', '국가', '이메일']}
+              rows={filtered.map((cp) => [
+                cp.company_code,
+                cp.company_name_ko,
+                cp.company_name_en ?? '',
+                TYPE_LABELS[cp.company_type] ?? cp.company_type,
+                cp.country_code ?? '',
+                cp.contact_email ?? '',
+              ])}
+              filename="거래상대방"
+            />
+          </div>
+          <Table>
+            <TableHeader>
               <TableRow>
-                <TableCell colSpan={7} className="text-center text-[var(--text-muted)] py-8">거래상대방 없음</TableCell>
+                <TableHead>코드</TableHead>
+                <TableHead>회사명 (KO)</TableHead>
+                <TableHead>회사명 (EN)</TableHead>
+                <TableHead>유형</TableHead>
+                <TableHead>국가</TableHead>
+                <TableHead>이메일</TableHead>
+                <TableHead className="text-right">액션</TableHead>
               </TableRow>
-            )}
-          </TableBody>
-        </Table>
+            </TableHeader>
+            <TableBody>
+              {filtered.map((cp) => (
+                <TableRow key={cp.id}>
+                  <TableCell className="font-mono text-xs">{cp.company_code}</TableCell>
+                  <TableCell className="font-medium">{cp.company_name_ko}</TableCell>
+                  <TableCell className="text-sm text-[var(--text-secondary)]">
+                    {cp.company_name_en}
+                  </TableCell>
+                  <TableCell>
+                    <Badge
+                      variant={
+                        cp.company_type === 'reinsurer'
+                          ? 'accent'
+                          : cp.company_type === 'cedant'
+                            ? 'default'
+                            : 'default'
+                      }
+                    >
+                      {TYPE_LABELS[cp.company_type] ?? cp.company_type}
+                    </Badge>
+                  </TableCell>
+                  <TableCell className="text-xs font-mono">{cp.country_code ?? '-'}</TableCell>
+                  <TableCell className="text-xs text-[var(--text-secondary)]">
+                    {cp.contact_email ?? '-'}
+                  </TableCell>
+                  <TableCell className="text-right">
+                    <Button size="sm" variant="ghost" onClick={() => openEdit(cp)}>
+                      <Pencil className="h-3 w-3 mr-1" />
+                      수정
+                    </Button>
+                  </TableCell>
+                </TableRow>
+              ))}
+              {filtered.length === 0 && (
+                <TableRow>
+                  <TableCell colSpan={7} className="text-center text-[var(--text-muted)] py-8">
+                    거래상대방 없음
+                  </TableCell>
+                </TableRow>
+              )}
+            </TableBody>
+          </Table>
+        </div>
       )}
     </div>
   )

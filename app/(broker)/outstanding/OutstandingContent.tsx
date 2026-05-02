@@ -20,6 +20,7 @@ import {
   TableRow,
 } from '@/components/ui/table'
 import { Badge } from '@/components/ui/badge'
+import { TableExportButton } from '@/components/shared/TableExportButton'
 import { AlertCircle } from 'lucide-react'
 import { CedantFilterSelect } from '@/components/contracts/CedantFilterSelect'
 import { useVirtualizer } from '@tanstack/react-virtual'
@@ -211,12 +212,24 @@ export function OutstandingContent({ initialContracts, initialCounterparties }: 
       />
 
       <div className="space-y-3">
-        <div className="flex items-center gap-2">
-          <AlertCircle className="h-4 w-4 text-[var(--warning)]" />
-          <h2 className="text-base font-semibold text-[var(--text-primary)]">미청산 상세 내역</h2>
-          {filtered.length > 0 && (
-            <span className="text-xs text-[var(--text-muted)]">({filtered.length}건)</span>
-          )}
+        <div className="flex items-center justify-between gap-2">
+          <div className="flex items-center gap-2">
+            <AlertCircle className="h-4 w-4 text-[var(--warning)]" />
+            <h2 className="text-base font-semibold text-[var(--text-primary)]">미청산 상세 내역</h2>
+          </div>
+          <TableExportButton
+            headers={['거래상대방', '계약번호', '통화', '방향', '미청산 금액', '만기일', 'Aging']}
+            rows={filtered.map((item) => [
+              item.counterparty_name,
+              item.contract_no,
+              item.currency_code,
+              item.direction === 'receivable' ? '수취' : '지급',
+              item.amount,
+              item.due_date ?? '',
+              agingBucketLabel(item.aging_bucket),
+            ])}
+            filename="미청산잔액"
+          />
         </div>
 
         <div className="flex gap-3">

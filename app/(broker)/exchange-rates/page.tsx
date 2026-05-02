@@ -22,6 +22,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
+import { TableExportButton } from '@/components/shared/TableExportButton'
 import { Plus, RefreshCw } from 'lucide-react'
 import type { ExchangeRateRow } from '@/types'
 
@@ -212,48 +213,64 @@ export default function ExchangeRatesPage() {
           로딩 중...
         </div>
       ) : (
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>날짜</TableHead>
-              <TableHead>통화쌍</TableHead>
-              <TableHead className="text-right">환율</TableHead>
-              <TableHead>유형</TableHead>
-              <TableHead>출처</TableHead>
-              <TableHead>등록일</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {rates.map((r) => (
-              <TableRow key={r.id}>
-                <TableCell className="font-mono text-xs">{r.rate_date}</TableCell>
-                <TableCell className="font-mono text-xs text-[var(--text-secondary)]">
-                  {r.from_currency}/{r.to_currency}
-                </TableCell>
-                <TableCell className="text-right font-mono text-sm text-[var(--text-number)]">
-                  {r.rate?.toLocaleString('ko-KR', {
-                    minimumFractionDigits: 2,
-                    maximumFractionDigits: 4,
-                  })}
-                </TableCell>
-                <TableCell className="text-xs">{r.rate_type}</TableCell>
-                <TableCell className="text-xs text-[var(--text-secondary)]">
-                  {r.source ?? '-'}
-                </TableCell>
-                <TableCell className="text-xs text-[var(--text-muted)]">
-                  {r.created_at ? format(new Date(r.created_at), 'yyyy-MM-dd') : '-'}
-                </TableCell>
-              </TableRow>
-            ))}
-            {rates.length === 0 && (
+        <div className="space-y-2">
+          <div className="flex justify-end">
+            <TableExportButton
+              headers={['날짜', '통화쌍', '환율', '유형', '출처', '등록일']}
+              rows={rates.map((r) => [
+                r.rate_date,
+                `${r.from_currency}/${r.to_currency}`,
+                r.rate ?? '',
+                r.rate_type,
+                r.source ?? '',
+                r.created_at ? format(new Date(r.created_at), 'yyyy-MM-dd') : '',
+              ])}
+              filename="환율이력"
+            />
+          </div>
+          <Table>
+            <TableHeader>
               <TableRow>
-                <TableCell colSpan={6} className="text-center text-[var(--text-muted)] py-8">
-                  환율 데이터 없음
-                </TableCell>
+                <TableHead>날짜</TableHead>
+                <TableHead>통화쌍</TableHead>
+                <TableHead className="text-right">환율</TableHead>
+                <TableHead>유형</TableHead>
+                <TableHead>출처</TableHead>
+                <TableHead>등록일</TableHead>
               </TableRow>
-            )}
-          </TableBody>
-        </Table>
+            </TableHeader>
+            <TableBody>
+              {rates.map((r) => (
+                <TableRow key={r.id}>
+                  <TableCell className="font-mono text-xs">{r.rate_date}</TableCell>
+                  <TableCell className="font-mono text-xs text-[var(--text-secondary)]">
+                    {r.from_currency}/{r.to_currency}
+                  </TableCell>
+                  <TableCell className="text-right font-mono text-sm text-[var(--text-number)]">
+                    {r.rate?.toLocaleString('ko-KR', {
+                      minimumFractionDigits: 2,
+                      maximumFractionDigits: 4,
+                    })}
+                  </TableCell>
+                  <TableCell className="text-xs">{r.rate_type}</TableCell>
+                  <TableCell className="text-xs text-[var(--text-secondary)]">
+                    {r.source ?? '-'}
+                  </TableCell>
+                  <TableCell className="text-xs text-[var(--text-muted)]">
+                    {r.created_at ? format(new Date(r.created_at), 'yyyy-MM-dd') : '-'}
+                  </TableCell>
+                </TableRow>
+              ))}
+              {rates.length === 0 && (
+                <TableRow>
+                  <TableCell colSpan={6} className="text-center text-[var(--text-muted)] py-8">
+                    환율 데이터 없음
+                  </TableCell>
+                </TableRow>
+              )}
+            </TableBody>
+          </Table>
+        </div>
       )}
     </div>
   )

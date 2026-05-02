@@ -23,6 +23,7 @@ import {
 } from '@/components/ui/table'
 import { Badge } from '@/components/ui/badge'
 import { StatusBadge } from '@/components/shared/StatusBadge'
+import { TableExportButton } from '@/components/shared/TableExportButton'
 import { CedantFilterSelect } from '@/components/contracts/CedantFilterSelect'
 import { Plus } from 'lucide-react'
 import { useContracts, useCounterparties } from '@/hooks/use-reference-data'
@@ -223,77 +224,108 @@ export function TransactionsList({ initialContracts, initialCounterparties }: Pr
           로딩 중...
         </div>
       ) : (
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>거래일</TableHead>
-              <TableHead>특약/계약</TableHead>
-              <TableHead>회사</TableHead>
-              <TableHead>유형</TableHead>
-              <TableHead>방향</TableHead>
-              <TableHead className="text-right">원화금액</TableHead>
-              <TableHead className="text-right">외화금액</TableHead>
-              <TableHead>통화</TableHead>
-              <TableHead>상태</TableHead>
-              <TableHead>설명</TableHead>
-              <TableHead className="text-right">액션</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {filtered.map((tx) => (
-              <TableRow key={tx.id} className={tx.is_allocation_parent ? 'opacity-50' : ''}>
-                <TableCell className="whitespace-nowrap text-xs font-mono text-[var(--text-secondary)]">
-                  {format(new Date(tx.transaction_date), 'yyyy-MM-dd')}
-                </TableCell>
-                <TableCell className="whitespace-nowrap text-xs">
-                  {contracts.find((c) => c.id === tx.contract_id)?.contract_no ??
-                    tx.contract_id.slice(0, 8)}
-                </TableCell>
-                <TableCell className="whitespace-nowrap min-w-[120px] text-xs">
-                  {counterparties.find((cp) => cp.id === tx.counterparty_id)?.company_name_ko ??
-                    tx.counterparty_id.slice(0, 8)}
-                </TableCell>
-                <TableCell className="whitespace-nowrap">
-                  <Badge variant="default" className="text-xs">
-                    {TX_TYPE_LABELS[tx.transaction_type] ?? tx.transaction_type}
-                  </Badge>
-                </TableCell>
-                <TableCell className="whitespace-nowrap">
-                  <Badge variant={tx.direction === 'receivable' ? 'success' : 'warning'}>
-                    {DIR_LABELS[tx.direction]}
-                  </Badge>
-                </TableCell>
-                <TableCell className="text-right font-mono text-sm text-[var(--text-number)]">
-                  {tx.amount_krw?.toLocaleString('ko-KR')}
-                </TableCell>
-                <TableCell className="text-right font-mono text-sm text-[var(--text-number)]">
-                  {tx.amount_original?.toLocaleString()}
-                </TableCell>
-                <TableCell className="text-xs font-mono">{tx.currency_code}</TableCell>
-                <TableCell>
-                  <StatusBadge status={tx.status} />
-                </TableCell>
-                <TableCell className="text-xs text-[var(--text-secondary)] max-w-40 truncate">
-                  {tx.description ?? '-'}
-                </TableCell>
-                <TableCell className="text-right">
-                  <Link href={`/transactions/${tx.id}`}>
-                    <Button size="sm" variant="ghost">
-                      상세
-                    </Button>
-                  </Link>
-                </TableCell>
-              </TableRow>
-            ))}
-            {filtered.length === 0 && (
+        <div className="space-y-2">
+          <div className="flex justify-end">
+            <TableExportButton
+              headers={[
+                '거래일',
+                '특약/계약',
+                '회사',
+                '유형',
+                '방향',
+                '원화금액',
+                '외화금액',
+                '통화',
+                '상태',
+                '설명',
+              ]}
+              rows={filtered.map((tx) => [
+                format(new Date(tx.transaction_date), 'yyyy-MM-dd'),
+                contracts.find((c) => c.id === tx.contract_id)?.contract_no ?? '',
+                counterparties.find((cp) => cp.id === tx.counterparty_id)?.company_name_ko ?? '',
+                TX_TYPE_LABELS[tx.transaction_type] ?? tx.transaction_type,
+                DIR_LABELS[tx.direction] ?? tx.direction,
+                tx.amount_krw ?? '',
+                tx.amount_original ?? '',
+                tx.currency_code,
+                tx.status,
+                tx.description ?? '',
+              ])}
+              filename="거래목록"
+            />
+          </div>
+          <Table>
+            <TableHeader>
               <TableRow>
-                <TableCell colSpan={11} className="text-center text-[var(--text-muted)] py-8">
-                  거래 내역 없음
-                </TableCell>
+                <TableHead>거래일</TableHead>
+                <TableHead>특약/계약</TableHead>
+                <TableHead>회사</TableHead>
+                <TableHead>유형</TableHead>
+                <TableHead>방향</TableHead>
+                <TableHead className="text-right">원화금액</TableHead>
+                <TableHead className="text-right">외화금액</TableHead>
+                <TableHead>통화</TableHead>
+                <TableHead>상태</TableHead>
+                <TableHead>설명</TableHead>
+                <TableHead className="text-right">액션</TableHead>
               </TableRow>
-            )}
-          </TableBody>
-        </Table>
+            </TableHeader>
+            <TableBody>
+              {filtered.map((tx) => (
+                <TableRow key={tx.id} className={tx.is_allocation_parent ? 'opacity-50' : ''}>
+                  <TableCell className="whitespace-nowrap text-xs font-mono text-[var(--text-secondary)]">
+                    {format(new Date(tx.transaction_date), 'yyyy-MM-dd')}
+                  </TableCell>
+                  <TableCell className="whitespace-nowrap text-xs">
+                    {contracts.find((c) => c.id === tx.contract_id)?.contract_no ??
+                      tx.contract_id.slice(0, 8)}
+                  </TableCell>
+                  <TableCell className="whitespace-nowrap min-w-[120px] text-xs">
+                    {counterparties.find((cp) => cp.id === tx.counterparty_id)?.company_name_ko ??
+                      tx.counterparty_id.slice(0, 8)}
+                  </TableCell>
+                  <TableCell className="whitespace-nowrap">
+                    <Badge variant="default" className="text-xs">
+                      {TX_TYPE_LABELS[tx.transaction_type] ?? tx.transaction_type}
+                    </Badge>
+                  </TableCell>
+                  <TableCell className="whitespace-nowrap">
+                    <Badge variant={tx.direction === 'receivable' ? 'success' : 'warning'}>
+                      {DIR_LABELS[tx.direction]}
+                    </Badge>
+                  </TableCell>
+                  <TableCell className="text-right font-mono text-sm text-[var(--text-number)]">
+                    {tx.amount_krw?.toLocaleString('ko-KR')}
+                  </TableCell>
+                  <TableCell className="text-right font-mono text-sm text-[var(--text-number)]">
+                    {tx.amount_original?.toLocaleString()}
+                  </TableCell>
+                  <TableCell className="text-xs font-mono">{tx.currency_code}</TableCell>
+                  <TableCell>
+                    <StatusBadge status={tx.status} />
+                  </TableCell>
+                  <TableCell className="text-xs text-[var(--text-secondary)] max-w-40 truncate">
+                    {tx.description ?? '-'}
+                  </TableCell>
+                  <TableCell className="text-right">
+                    <Link href={`/transactions/${tx.id}`}>
+                      <Button size="sm" variant="ghost">
+                        상세
+                      </Button>
+                    </Link>
+                  </TableCell>
+                </TableRow>
+              ))}
+              {filtered.length === 0 && (
+                <TableRow>
+                  <TableCell colSpan={11} className="text-center text-[var(--text-muted)] py-8">
+                    거래 내역 없음
+                  </TableCell>
+                </TableRow>
+              )}
+            </TableBody>
+          </Table>
+        </div>
       )}
     </div>
   )

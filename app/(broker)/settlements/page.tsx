@@ -23,6 +23,7 @@ import {
 import { Badge } from '@/components/ui/badge'
 import { SettlementMatchPanel } from '@/components/settlements/SettlementMatchPanel'
 import { SettlementForm } from '@/components/settlements/SettlementForm'
+import { TableExportButton } from '@/components/shared/TableExportButton'
 import { Plus, ChevronsRight } from 'lucide-react'
 import { useCounterparties, useCurrencies } from '@/hooks/use-reference-data'
 import type { SettlementRow } from '@/types'
@@ -188,83 +189,116 @@ export default function SettlementsPage() {
           로딩 중...
         </div>
       ) : (
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>결제번호</TableHead>
-              <TableHead>결제일</TableHead>
-              <TableHead>회사</TableHead>
-              <TableHead>유형</TableHead>
-              <TableHead className="text-right">금액</TableHead>
-              <TableHead>통화</TableHead>
-              <TableHead>잔액</TableHead>
-              <TableHead>상태</TableHead>
-              <TableHead>참조번호</TableHead>
-              <TableHead className="text-right">매칭</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {settlements.map((s) => (
-              <TableRow key={s.id}>
-                <TableCell className="whitespace-nowrap text-xs font-mono text-[var(--text-secondary)]">
-                  {s.settlement_no}
-                </TableCell>
-                <TableCell className="whitespace-nowrap text-xs font-mono text-[var(--text-secondary)]">
-                  {format(new Date(s.settlement_date), 'yyyy-MM-dd')}
-                </TableCell>
-                <TableCell className="whitespace-nowrap min-w-[120px] text-xs">
-                  {counterparties.find((cp) => cp.id === s.counterparty_id)?.company_name_ko ??
-                    s.counterparty_id.slice(0, 8)}
-                </TableCell>
-                <TableCell className="whitespace-nowrap text-xs">
-                  {TYPE_LABELS[s.settlement_type] ?? s.settlement_type}
-                </TableCell>
-                <TableCell className="text-right font-mono text-sm text-[var(--text-number)]">
-                  {s.amount?.toLocaleString()}
-                </TableCell>
-                <TableCell className="text-xs font-mono">{s.currency_code}</TableCell>
-                <TableCell className="text-right font-mono text-xs text-[var(--text-secondary)]">
-                  {((s.amount ?? 0) - (s.matched_amount ?? 0)).toLocaleString()}
-                </TableCell>
-                <TableCell>
-                  <Badge
-                    variant={
-                      s.match_status === 'fully_matched'
-                        ? 'success'
-                        : s.match_status === 'partial'
-                          ? 'warning'
-                          : 'default'
-                    }
-                  >
-                    {s.match_status === 'fully_matched'
-                      ? '매칭됨'
-                      : s.match_status === 'partial'
-                        ? '부분매칭'
-                        : '미매칭'}
-                  </Badge>
-                </TableCell>
-                <TableCell className="text-xs text-[var(--text-secondary)]">
-                  {s.bank_reference ?? '-'}
-                </TableCell>
-                <TableCell className="text-right">
-                  {s.match_status !== 'fully_matched' && (
-                    <Button size="sm" variant="ghost" onClick={() => setShowMatchPanel(true)}>
-                      <ChevronsRight className="h-4 w-4" />
-                      매칭
-                    </Button>
-                  )}
-                </TableCell>
-              </TableRow>
-            ))}
-            {settlements.length === 0 && (
+        <div className="space-y-2">
+          <div className="flex justify-end">
+            <TableExportButton
+              headers={[
+                '결제번호',
+                '결제일',
+                '회사',
+                '유형',
+                '금액',
+                '통화',
+                '잔액',
+                '상태',
+                '참조번호',
+              ]}
+              rows={settlements.map((s) => [
+                s.settlement_no,
+                format(new Date(s.settlement_date), 'yyyy-MM-dd'),
+                counterparties.find((cp) => cp.id === s.counterparty_id)?.company_name_ko ?? '',
+                TYPE_LABELS[s.settlement_type] ?? s.settlement_type,
+                s.amount ?? '',
+                s.currency_code,
+                (s.amount ?? 0) - (s.matched_amount ?? 0),
+                s.match_status === 'fully_matched'
+                  ? '매칭됨'
+                  : s.match_status === 'partial'
+                    ? '부분매칭'
+                    : '미매칭',
+                s.bank_reference ?? '',
+              ])}
+              filename="결제목록"
+            />
+          </div>
+          <Table>
+            <TableHeader>
               <TableRow>
-                <TableCell colSpan={10} className="text-center text-[var(--text-muted)] py-8">
-                  등록된 결제가 없습니다.
-                </TableCell>
+                <TableHead>결제번호</TableHead>
+                <TableHead>결제일</TableHead>
+                <TableHead>회사</TableHead>
+                <TableHead>유형</TableHead>
+                <TableHead className="text-right">금액</TableHead>
+                <TableHead>통화</TableHead>
+                <TableHead>잔액</TableHead>
+                <TableHead>상태</TableHead>
+                <TableHead>참조번호</TableHead>
+                <TableHead className="text-right">매칭</TableHead>
               </TableRow>
-            )}
-          </TableBody>
-        </Table>
+            </TableHeader>
+            <TableBody>
+              {settlements.map((s) => (
+                <TableRow key={s.id}>
+                  <TableCell className="whitespace-nowrap text-xs font-mono text-[var(--text-secondary)]">
+                    {s.settlement_no}
+                  </TableCell>
+                  <TableCell className="whitespace-nowrap text-xs font-mono text-[var(--text-secondary)]">
+                    {format(new Date(s.settlement_date), 'yyyy-MM-dd')}
+                  </TableCell>
+                  <TableCell className="whitespace-nowrap min-w-[120px] text-xs">
+                    {counterparties.find((cp) => cp.id === s.counterparty_id)?.company_name_ko ??
+                      s.counterparty_id.slice(0, 8)}
+                  </TableCell>
+                  <TableCell className="whitespace-nowrap text-xs">
+                    {TYPE_LABELS[s.settlement_type] ?? s.settlement_type}
+                  </TableCell>
+                  <TableCell className="text-right font-mono text-sm text-[var(--text-number)]">
+                    {s.amount?.toLocaleString()}
+                  </TableCell>
+                  <TableCell className="text-xs font-mono">{s.currency_code}</TableCell>
+                  <TableCell className="text-right font-mono text-xs text-[var(--text-secondary)]">
+                    {((s.amount ?? 0) - (s.matched_amount ?? 0)).toLocaleString()}
+                  </TableCell>
+                  <TableCell>
+                    <Badge
+                      variant={
+                        s.match_status === 'fully_matched'
+                          ? 'success'
+                          : s.match_status === 'partial'
+                            ? 'warning'
+                            : 'default'
+                      }
+                    >
+                      {s.match_status === 'fully_matched'
+                        ? '매칭됨'
+                        : s.match_status === 'partial'
+                          ? '부분매칭'
+                          : '미매칭'}
+                    </Badge>
+                  </TableCell>
+                  <TableCell className="text-xs text-[var(--text-secondary)]">
+                    {s.bank_reference ?? '-'}
+                  </TableCell>
+                  <TableCell className="text-right">
+                    {s.match_status !== 'fully_matched' && (
+                      <Button size="sm" variant="ghost" onClick={() => setShowMatchPanel(true)}>
+                        <ChevronsRight className="h-4 w-4" />
+                        매칭
+                      </Button>
+                    )}
+                  </TableCell>
+                </TableRow>
+              ))}
+              {settlements.length === 0 && (
+                <TableRow>
+                  <TableCell colSpan={10} className="text-center text-[var(--text-muted)] py-8">
+                    등록된 결제가 없습니다.
+                  </TableCell>
+                </TableRow>
+              )}
+            </TableBody>
+          </Table>
+        </div>
       )}
     </div>
   )
