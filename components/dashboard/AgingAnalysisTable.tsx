@@ -34,12 +34,16 @@ export interface OutstandingScopeProps {
   counterpartyId?: string
   contractId?: string
   cedantId?: string
+  filterCurrency?: string
+  filterDirection?: 'receivable' | 'payable' | null
 }
 
 export function AgingAnalysisTable({
   counterpartyId,
   contractId,
   cedantId,
+  filterCurrency,
+  filterDirection,
 }: OutstandingScopeProps = {}) {
   const [rows, setRows] = useState<AgingRow[]>([])
   const [loading, setLoading] = useState(true)
@@ -80,7 +84,15 @@ export function AgingAnalysisTable({
   return (
     <Card>
       <CardHeader className="flex flex-row items-center justify-between pb-2">
-        <CardTitle>Aging 분석</CardTitle>
+        <div className="flex items-center gap-2">
+          <CardTitle>Aging 분석</CardTitle>
+          {filterCurrency && filterDirection && (
+            <span className="text-xs text-[var(--text-muted)] bg-surface-elevated px-2 py-0.5 rounded">
+              {filterCurrency} · {filterDirection === 'receivable' ? '수취채권' : '지급채무'} 필터
+              중
+            </span>
+          )}
+        </div>
         <TableExportButton
           headers={[
             '거래상대방',
@@ -127,34 +139,46 @@ export function AgingAnalysisTable({
               </TableRow>
             </TableHeader>
             <TableBody>
-              {rows.map((row, idx) => (
-                <TableRow key={idx}>
-                  <TableCell className="whitespace-nowrap min-w-[120px] text-[var(--text-primary)]">
-                    {row.counterparty}
-                  </TableCell>
-                  <TableCell className="whitespace-nowrap text-[var(--text-secondary)]">
-                    {row.currency}
-                  </TableCell>
-                  <TableCell className="font-mono text-right text-[var(--text-number)]">
-                    {fmt(row.current)}
-                  </TableCell>
-                  <TableCell className="font-mono text-right text-[var(--text-number)]">
-                    {fmt(row.days_1_30)}
-                  </TableCell>
-                  <TableCell className="font-mono text-right text-warning">
-                    {fmt(row.days_31_60)}
-                  </TableCell>
-                  <TableCell className="font-mono text-right text-warning">
-                    {fmt(row.days_61_90)}
-                  </TableCell>
-                  <TableCell className="font-mono text-right text-warning-urgent">
-                    {fmt(row.days_over_90)}
-                  </TableCell>
-                  <TableCell className="font-mono text-right font-semibold text-[var(--text-number)]">
-                    {fmt(row.total)}
-                  </TableCell>
-                </TableRow>
-              ))}
+              {rows.map((row, idx) => {
+                const isFiltering = !!(filterCurrency && filterDirection)
+                const currencyMatch = !filterCurrency || row.currency === filterCurrency
+                const directionMatch =
+                  !filterDirection ||
+                  (filterDirection === 'receivable' ? row.total >= 0 : row.total < 0)
+                const isHighlighted = isFiltering && currencyMatch && directionMatch
+                const isDimmed = isFiltering && !(currencyMatch && directionMatch)
+                return (
+                  <TableRow
+                    key={idx}
+                    className={`transition-opacity ${isHighlighted ? 'bg-accent/10' : ''} ${isDimmed ? 'opacity-30' : ''}`}
+                  >
+                    <TableCell className="whitespace-nowrap min-w-[120px] text-[var(--text-primary)]">
+                      {row.counterparty}
+                    </TableCell>
+                    <TableCell className="whitespace-nowrap text-[var(--text-secondary)]">
+                      {row.currency}
+                    </TableCell>
+                    <TableCell className="font-mono text-right text-[var(--text-number)]">
+                      {fmt(row.current)}
+                    </TableCell>
+                    <TableCell className="font-mono text-right text-[var(--text-number)]">
+                      {fmt(row.days_1_30)}
+                    </TableCell>
+                    <TableCell className="font-mono text-right text-warning">
+                      {fmt(row.days_31_60)}
+                    </TableCell>
+                    <TableCell className="font-mono text-right text-warning">
+                      {fmt(row.days_61_90)}
+                    </TableCell>
+                    <TableCell className="font-mono text-right text-warning-urgent">
+                      {fmt(row.days_over_90)}
+                    </TableCell>
+                    <TableCell className="font-mono text-right font-semibold text-[var(--text-number)]">
+                      {fmt(row.total)}
+                    </TableCell>
+                  </TableRow>
+                )
+              })}
             </TableBody>
           </Table>
         )}

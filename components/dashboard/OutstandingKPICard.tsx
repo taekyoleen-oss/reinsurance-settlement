@@ -18,11 +18,18 @@ export interface OutstandingScopeProps {
   cedantId?: string
 }
 
+interface KPISelectProps {
+  onSelect?: (currency: string, direction: 'receivable' | 'payable') => void
+  selected?: { currency: string; direction: string } | null
+}
+
 export function OutstandingKPICard({
   counterpartyId,
   contractId,
   cedantId,
-}: OutstandingScopeProps = {}) {
+  onSelect,
+  selected,
+}: OutstandingScopeProps & KPISelectProps = {}) {
   const [data, setData] = useState<OutstandingSummary[]>([])
   const [loading, setLoading] = useState(true)
 
@@ -92,55 +99,75 @@ export function OutstandingKPICard({
 
   return (
     <div className="space-y-4">
-      {data.map((item) => (
-        <div key={item.currency} className="grid grid-cols-3 gap-4">
-          <Card accentColor="var(--success)">
-            <CardHeader className="pb-1">
-              <CardTitle className="text-xs text-[var(--text-muted)]">수취채권 ({item.currency})</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="flex items-center gap-2">
-                <TrendingUp className="h-4 w-4 text-success shrink-0" />
-                <span className="font-mono text-lg font-semibold text-success tabular-nums">
-                  {fmt(item.receivable, item.currency)}
-                </span>
-              </div>
-            </CardContent>
-          </Card>
+      {data.map((item) => {
+        const isRecvSelected =
+          selected?.currency === item.currency && selected?.direction === 'receivable'
+        const isPaySelected =
+          selected?.currency === item.currency && selected?.direction === 'payable'
+        return (
+          <div key={item.currency} className="grid grid-cols-3 gap-4">
+            <Card
+              accentColor="var(--success)"
+              className={`transition-all ${onSelect ? 'cursor-pointer hover:ring-2 hover:ring-success/50' : ''} ${isRecvSelected ? 'ring-2 ring-success ring-offset-1' : ''}`}
+              onClick={() => onSelect?.(item.currency, 'receivable')}
+            >
+              <CardHeader className="pb-1">
+                <CardTitle className="text-xs text-[var(--text-muted)]">
+                  수취채권 ({item.currency})
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="flex items-center gap-2">
+                  <TrendingUp className="h-4 w-4 text-success shrink-0" />
+                  <span className="font-mono text-lg font-semibold text-success tabular-nums">
+                    {fmt(item.receivable, item.currency)}
+                  </span>
+                </div>
+              </CardContent>
+            </Card>
 
-          <Card accentColor="var(--warning-urgent)">
-            <CardHeader className="pb-1">
-              <CardTitle className="text-xs text-[var(--text-muted)]">지급채무 ({item.currency})</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="flex items-center gap-2">
-                <TrendingDown className="h-4 w-4 text-warning-urgent shrink-0" />
-                <span className="font-mono text-lg font-semibold text-warning-urgent tabular-nums">
-                  {fmt(item.payable, item.currency)}
-                </span>
-              </div>
-            </CardContent>
-          </Card>
+            <Card
+              accentColor="var(--warning-urgent)"
+              className={`transition-all ${onSelect ? 'cursor-pointer hover:ring-2 hover:ring-warning-urgent/50' : ''} ${isPaySelected ? 'ring-2 ring-warning-urgent ring-offset-1' : ''}`}
+              onClick={() => onSelect?.(item.currency, 'payable')}
+            >
+              <CardHeader className="pb-1">
+                <CardTitle className="text-xs text-[var(--text-muted)]">
+                  지급채무 ({item.currency})
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="flex items-center gap-2">
+                  <TrendingDown className="h-4 w-4 text-warning-urgent shrink-0" />
+                  <span className="font-mono text-lg font-semibold text-warning-urgent tabular-nums">
+                    {fmt(item.payable, item.currency)}
+                  </span>
+                </div>
+              </CardContent>
+            </Card>
 
-          <Card accentColor={item.net >= 0 ? 'var(--primary)' : 'var(--warning)'}>
-            <CardHeader className="pb-1">
-              <CardTitle className="text-xs text-[var(--text-muted)]">순잔액 ({item.currency})</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="flex items-center gap-2">
-                <Minus className="h-4 w-4 text-[var(--text-secondary)] shrink-0" />
-                <span
-                  className={`font-mono text-lg font-semibold tabular-nums ${
-                    item.net >= 0 ? 'text-primary' : 'text-warning'
-                  }`}
-                >
-                  {fmt(item.net, item.currency)}
-                </span>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-      ))}
+            <Card accentColor={item.net >= 0 ? 'var(--primary)' : 'var(--warning)'}>
+              <CardHeader className="pb-1">
+                <CardTitle className="text-xs text-[var(--text-muted)]">
+                  순잔액 ({item.currency})
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="flex items-center gap-2">
+                  <Minus className="h-4 w-4 text-[var(--text-secondary)] shrink-0" />
+                  <span
+                    className={`font-mono text-lg font-semibold tabular-nums ${
+                      item.net >= 0 ? 'text-primary' : 'text-warning'
+                    }`}
+                  >
+                    {fmt(item.net, item.currency)}
+                  </span>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        )
+      })}
     </div>
   )
 }
