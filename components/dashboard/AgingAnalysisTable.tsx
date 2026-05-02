@@ -10,7 +10,9 @@ import {
   TableRow,
 } from '@/components/ui/table'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Button } from '@/components/ui/button'
 import { TableExportButton } from '@/components/shared/TableExportButton'
+import { X } from 'lucide-react'
 
 interface AgingRow {
   counterparty: string
@@ -30,12 +32,20 @@ function fmt(n: number) {
   }).format(n)
 }
 
+function sumTotalsByCurrency(rows: AgingRow[]): Map<string, number> {
+  const m = new Map<string, number>()
+  for (const row of rows) {
+    m.set(row.currency, (m.get(row.currency) ?? 0) + row.total)
+  }
+  return m
+}
+
 export interface OutstandingScopeProps {
   counterpartyId?: string
   contractId?: string
   cedantId?: string
   filterCurrency?: string
-  filterDirection?: 'receivable' | 'payable' | null
+  onClearFilter?: () => void
 }
 
 export function AgingAnalysisTable({
@@ -43,7 +53,7 @@ export function AgingAnalysisTable({
   contractId,
   cedantId,
   filterCurrency,
-  filterDirection,
+  onClearFilter,
 }: OutstandingScopeProps = {}) {
   const [rows, setRows] = useState<AgingRow[]>([])
   const [loading, setLoading] = useState(true)
@@ -86,11 +96,16 @@ export function AgingAnalysisTable({
       <CardHeader className="flex flex-row items-center justify-between pb-2">
         <div className="flex items-center gap-2">
           <CardTitle>Aging 분석</CardTitle>
-          {filterCurrency && filterDirection && (
-            <span className="text-xs text-[var(--text-muted)] bg-surface-elevated px-2 py-0.5 rounded">
-              {filterCurrency} · {filterDirection === 'receivable' ? '수취채권' : '지급채무'} 필터
-              중
-            </span>
+          {filterCurrency && (
+            <Button
+              size="sm"
+              variant="outline"
+              className="h-6 gap-1 px-2 text-xs text-[var(--text-muted)]"
+              onClick={onClearFilter}
+            >
+              {filterCurrency} 필터
+              <X className="h-3 w-3" />
+            </Button>
           )}
         </div>
         <TableExportButton
@@ -125,62 +140,82 @@ export function AgingAnalysisTable({
         ) : rows.length === 0 ? (
           <div className="p-4 text-center text-[var(--text-muted)] text-sm">데이터 없음</div>
         ) : (
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>거래상대방</TableHead>
-                <TableHead>통화</TableHead>
-                <TableHead className="text-right">Current</TableHead>
-                <TableHead className="text-right">1-30일</TableHead>
-                <TableHead className="text-right">31-60일</TableHead>
-                <TableHead className="text-right">61-90일</TableHead>
-                <TableHead className="text-right text-warning-urgent">90일+</TableHead>
-                <TableHead className="text-right">합계</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {rows.map((row, idx) => {
-                const isFiltering = !!(filterCurrency && filterDirection)
-                const currencyMatch = !filterCurrency || row.currency === filterCurrency
-                const directionMatch =
-                  !filterDirection ||
-                  (filterDirection === 'receivable' ? row.total >= 0 : row.total < 0)
-                const isHighlighted = isFiltering && currencyMatch && directionMatch
-                const isDimmed = isFiltering && !(currencyMatch && directionMatch)
-                return (
-                  <TableRow
-                    key={idx}
-                    className={`transition-opacity ${isHighlighted ? 'bg-accent/10' : ''} ${isDimmed ? 'opacity-30' : ''}`}
-                  >
-                    <TableCell className="whitespace-nowrap min-w-[120px] text-[var(--text-primary)]">
-                      {row.counterparty}
-                    </TableCell>
-                    <TableCell className="whitespace-nowrap text-[var(--text-secondary)]">
-                      {row.currency}
-                    </TableCell>
-                    <TableCell className="font-mono text-right text-[var(--text-number)]">
-                      {fmt(row.current)}
-                    </TableCell>
-                    <TableCell className="font-mono text-right text-[var(--text-number)]">
-                      {fmt(row.days_1_30)}
-                    </TableCell>
-                    <TableCell className="font-mono text-right text-warning">
-                      {fmt(row.days_31_60)}
-                    </TableCell>
-                    <TableCell className="font-mono text-right text-warning">
-                      {fmt(row.days_61_90)}
-                    </TableCell>
-                    <TableCell className="font-mono text-right text-warning-urgent">
-                      {fmt(row.days_over_90)}
-                    </TableCell>
-                    <TableCell className="font-mono text-right font-semibold text-[var(--text-number)]">
-                      {fmt(row.total)}
-                    </TableCell>
-                  </TableRow>
-                )
-              })}
-            </TableBody>
-          </Table>
+          <div>
+            <p className="px-4 pb-2 text-xs text-[var(--text-muted)]">
+              상단 KPI 수취채권·지급채무는 거래 방향별 총액이고, 표의 합계는 거래상대방별
+              순잔액(수취−지급)입니다. 통화별 소계와 KPI &quot;순잔액&quot;이 일치합니다.
+            </p>
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>거래상대방</TableHead>
+                  <TableHead>통화</TableHead>
+                  <TableHead className="text-right">Current</TableHead>
+                  <TableHead className="text-right">1-30일</TableHead>
+                  <TableHead className="text-right">31-60일</TableHead>
+                  <TableHead className="text-right">61-90일</TableHead>
+                  <TableHead className="text-right text-warning-urgent">90일+</TableHead>
+                  <TableHead className="text-right">합계</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {rows.map((row, idx) => {
+                  const isFiltering = !!filterCurrency
+                  const isHighlighted = isFiltering && row.currency === filterCurrency
+                  const isDimmed = isFiltering && row.currency !== filterCurrency
+                  return (
+                    <TableRow
+                      key={idx}
+                      className={`transition-opacity ${isHighlighted ? 'bg-accent/10' : ''} ${isDimmed ? 'opacity-30' : ''}`}
+                    >
+                      <TableCell className="whitespace-nowrap min-w-[120px] text-[var(--text-primary)]">
+                        {row.counterparty}
+                      </TableCell>
+                      <TableCell className="whitespace-nowrap text-[var(--text-secondary)]">
+                        {row.currency}
+                      </TableCell>
+                      <TableCell className="font-mono text-right text-[var(--text-number)]">
+                        {fmt(row.current)}
+                      </TableCell>
+                      <TableCell className="font-mono text-right text-[var(--text-number)]">
+                        {fmt(row.days_1_30)}
+                      </TableCell>
+                      <TableCell className="font-mono text-right text-warning">
+                        {fmt(row.days_31_60)}
+                      </TableCell>
+                      <TableCell className="font-mono text-right text-warning">
+                        {fmt(row.days_61_90)}
+                      </TableCell>
+                      <TableCell className="font-mono text-right text-warning-urgent">
+                        {fmt(row.days_over_90)}
+                      </TableCell>
+                      <TableCell className="font-mono text-right font-semibold text-[var(--text-number)]">
+                        {fmt(row.total)}
+                      </TableCell>
+                    </TableRow>
+                  )
+                })}
+                {[...sumTotalsByCurrency(rows).entries()]
+                  .sort(([a], [b]) => a.localeCompare(b))
+                  .map(([currency, sumNet]) => (
+                    <TableRow
+                      key={`subtotal-${currency}`}
+                      className="bg-surface-elevated/80 border-t-2 border-border"
+                    >
+                      <TableCell
+                        colSpan={7}
+                        className="font-medium text-[var(--text-secondary)] whitespace-nowrap"
+                      >
+                        소계 · 순잔액 ({currency})
+                      </TableCell>
+                      <TableCell className="font-mono text-right font-semibold text-primary tabular-nums">
+                        {fmt(sumNet)}
+                      </TableCell>
+                    </TableRow>
+                  ))}
+              </TableBody>
+            </Table>
+          </div>
         )}
       </CardContent>
     </Card>

@@ -24,7 +24,7 @@ export function DashboardClient() {
       <OutstandingKPICard onSelect={handleSelect} selected={selected} />
       <AgingAnalysisTable
         filterCurrency={selected?.currency}
-        filterDirection={selected?.direction ?? null}
+        onClearFilter={() => setSelected(null)}
       />
     </>
   )
