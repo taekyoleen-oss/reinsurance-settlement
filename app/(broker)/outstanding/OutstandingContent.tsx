@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
+import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
 import {
   Select,
@@ -19,9 +20,8 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
-import { Badge } from '@/components/ui/badge'
 import { TableExportButton } from '@/components/shared/TableExportButton'
-import { AlertCircle } from 'lucide-react'
+import { AlertCircle, X } from 'lucide-react'
 import { CedantFilterSelect } from '@/components/contracts/CedantFilterSelect'
 import { useVirtualizer } from '@tanstack/react-virtual'
 import { useContracts, useCounterparties } from '@/hooks/use-reference-data'
@@ -37,6 +37,12 @@ interface OutstandingItem {
   amount: number
   due_date?: string
   aging_bucket: string
+}
+
+type Direction = 'receivable' | 'payable'
+interface KpiSelection {
+  currency: string
+  direction: Direction
 }
 
 function agingBucketLabel(b: string): string {
@@ -76,10 +82,12 @@ export function OutstandingContent({ initialContracts, initialCounterparties }: 
   const [items, setItems] = useState<OutstandingItem[]>([])
   const [loading, setLoading] = useState(true)
   const [filterCurrency, setFilterCurrency] = useState('all')
-  const [filterDirection, setFilterDirection] = useState('all')
   const [filterCedantId, setFilterCedantId] = useState('')
   const [filterContractId, setFilterContractId] = useState('all')
   const [filterCounterpartyId, setFilterCounterpartyId] = useState('all')
+
+  // KPI 카드 선택 상태 (통화 + 방향)
+  const [kpiSelected, setKpiSelected] = useState<KpiSelection | null>(null)
 
   const contractsForSelect = contracts.filter(
     (c) => !filterCedantId || c.cedant_id === filterCedantId
@@ -128,13 +136,12 @@ export function OutstandingContent({ initialContracts, initialCounterparties }: 
 
   const filtered = items.filter((item) => {
     if (filterCurrency !== 'all' && item.currency_code !== filterCurrency) return false
-    if (filterDirection !== 'all' && item.direction !== filterDirection) return false
     return true
   })
 
   const currencies = Array.from(new Set(items.map((i) => i.currency_code)))
 
-  // ── M5: 가상화 — 100행 초과 시 DOM 폭증 방지 ──
+  // 가상화 — 100행 초과 시
   const parentRef = useRef<HTMLDivElement>(null)
   const rowVirtualizer = useVirtualizer({
     count: filtered.length,
@@ -145,6 +152,55 @@ export function OutstandingContent({ initialContracts, initialCounterparties }: 
   const useVirtualRows = filtered.length > 100
   const virtualRows = rowVirtualizer.getVirtualItems()
 
+  const handleKpiSelect = (currency: string, direction: Direction) => {
+    setKpiSelected((prev) =>
+      prev?.currency === currency && prev?.direction === direction ? null : { currency, direction }
+    )
+  }
+
+  // 상세 행 하이라이트 계산
+  function rowHighlight(item: OutstandingItem) {
+    if (!kpiSelected) return ''
+    const match =
+      item.currency_code === kpiSelected.currency && item.direction === kpiSelected.direction
+    return match ? 'bg-accent/10' : 'opacity-30'
+  }
+
+  // 상세 내역 공통 행 컨텐츠
+  function DetailRow({ item, className }: { item: OutstandingItem; className?: string }) {
+    return (
+      <TableRow className={`transition-opacity ${className ?? ''} ${rowHighlight(item)}`}>
+        <TableCell className="whitespace-nowrap min-w-[120px] text-sm">
+          {item.counterparty_name}
+        </TableCell>
+        <TableCell className="whitespace-nowrap text-xs font-mono">{item.contract_no}</TableCell>
+        <TableCell className="whitespace-nowrap text-xs font-mono">{item.currency_code}</TableCell>
+        <TableCell className="whitespace-nowrap text-right font-mono text-sm text-success">
+          {item.direction === 'receivable' ? (
+            item.amount?.toLocaleString()
+          ) : (
+            <span className="text-[var(--text-muted)]">-</span>
+          )}
+        </TableCell>
+        <TableCell className="whitespace-nowrap text-right font-mono text-sm text-warning-urgent">
+          {item.direction === 'payable' ? (
+            item.amount?.toLocaleString()
+          ) : (
+            <span className="text-[var(--text-muted)]">-</span>
+          )}
+        </TableCell>
+        <TableCell className="whitespace-nowrap text-xs text-[var(--text-secondary)]">
+          {item.due_date ?? '-'}
+        </TableCell>
+        <TableCell
+          className={`whitespace-nowrap text-xs font-medium ${AGING_COLORS[item.aging_bucket] ?? ''}`}
+        >
+          {agingBucketLabel(item.aging_bucket)}
+        </TableCell>
+      </TableRow>
+    )
+  }
+
   return (
     <div className="space-y-6">
       <div>
@@ -154,6 +210,7 @@ export function OutstandingContent({ initialContracts, initialCounterparties }: 
         </p>
       </div>
 
+      {/* 범위 필터 */}
       <div className="flex flex-wrap items-end gap-3">
         <CedantFilterSelect
           value={filterCedantId}
@@ -200,31 +257,59 @@ export function OutstandingContent({ initialContracts, initialCounterparties }: 
         </div>
       </div>
 
+      {/* KPI 카드 — 클릭 시 하이라이트 연동 */}
       <OutstandingKPICard
         counterpartyId={scopeCounterpartyId}
         contractId={scopeContractId}
         cedantId={scopeCedantId}
+        onSelect={handleKpiSelect}
+        selected={kpiSelected}
       />
+
+      {/* Aging 분석 — 통화 기준 하이라이트 */}
       <AgingAnalysisTable
         counterpartyId={scopeCounterpartyId}
         contractId={scopeContractId}
         cedantId={scopeCedantId}
+        filterCurrency={kpiSelected?.currency}
+        onClearFilter={() => setKpiSelected(null)}
       />
 
+      {/* 미청산 상세 내역 */}
       <div className="space-y-3">
         <div className="flex items-center justify-between gap-2">
           <div className="flex items-center gap-2">
             <AlertCircle className="h-4 w-4 text-[var(--warning)]" />
             <h2 className="text-base font-semibold text-[var(--text-primary)]">미청산 상세 내역</h2>
+            {kpiSelected && (
+              <Button
+                size="sm"
+                variant="outline"
+                className="h-6 gap-1 px-2 text-xs text-[var(--text-muted)]"
+                onClick={() => setKpiSelected(null)}
+              >
+                {kpiSelected.currency} · {kpiSelected.direction === 'receivable' ? '수취' : '지급'}{' '}
+                하이라이트
+                <X className="h-3 w-3" />
+              </Button>
+            )}
           </div>
           <TableExportButton
-            headers={['거래상대방', '계약번호', '통화', '방향', '미청산 금액', '만기일', 'Aging']}
+            headers={[
+              '거래상대방',
+              '계약번호',
+              '통화',
+              '수취 금액',
+              '지급 금액',
+              '만기일',
+              'Aging',
+            ]}
             rows={filtered.map((item) => [
               item.counterparty_name,
               item.contract_no,
               item.currency_code,
-              item.direction === 'receivable' ? '수취' : '지급',
-              item.amount,
+              item.direction === 'receivable' ? item.amount : '',
+              item.direction === 'payable' ? item.amount : '',
               item.due_date ?? '',
               agingBucketLabel(item.aging_bucket),
             ])}
@@ -232,6 +317,7 @@ export function OutstandingContent({ initialContracts, initialCounterparties }: 
           />
         </div>
 
+        {/* 상세 통화 필터 */}
         <div className="flex gap-3">
           <Select value={filterCurrency} onValueChange={setFilterCurrency}>
             <SelectTrigger className="w-28">
@@ -244,16 +330,6 @@ export function OutstandingContent({ initialContracts, initialCounterparties }: 
                   {c}
                 </SelectItem>
               ))}
-            </SelectContent>
-          </Select>
-          <Select value={filterDirection} onValueChange={setFilterDirection}>
-            <SelectTrigger className="w-32">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">전체 방향</SelectItem>
-              <SelectItem value="receivable">수취</SelectItem>
-              <SelectItem value="payable">지급</SelectItem>
             </SelectContent>
           </Select>
         </div>
@@ -275,8 +351,8 @@ export function OutstandingContent({ initialContracts, initialCounterparties }: 
                   <TableHead>거래상대방</TableHead>
                   <TableHead>계약번호</TableHead>
                   <TableHead>통화</TableHead>
-                  <TableHead>방향</TableHead>
-                  <TableHead className="text-right">미청산 금액</TableHead>
+                  <TableHead className="text-right text-success">수취 금액</TableHead>
+                  <TableHead className="text-right text-warning-urgent">지급 금액</TableHead>
                   <TableHead>만기일</TableHead>
                   <TableHead>Aging</TableHead>
                 </TableRow>
@@ -287,6 +363,7 @@ export function OutstandingContent({ initialContracts, initialCounterparties }: 
                   return (
                     <TableRow
                       key={vRow.key}
+                      className={`transition-opacity ${rowHighlight(item)}`}
                       style={{
                         position: 'absolute',
                         top: 0,
@@ -305,13 +382,19 @@ export function OutstandingContent({ initialContracts, initialCounterparties }: 
                       <TableCell className="whitespace-nowrap text-xs font-mono">
                         {item.currency_code}
                       </TableCell>
-                      <TableCell className="whitespace-nowrap">
-                        <Badge variant={item.direction === 'receivable' ? 'success' : 'warning'}>
-                          {item.direction === 'receivable' ? '수취' : '지급'}
-                        </Badge>
+                      <TableCell className="whitespace-nowrap text-right font-mono text-sm text-success">
+                        {item.direction === 'receivable' ? (
+                          item.amount?.toLocaleString()
+                        ) : (
+                          <span className="text-[var(--text-muted)]">-</span>
+                        )}
                       </TableCell>
-                      <TableCell className="whitespace-nowrap text-right font-mono text-sm text-[var(--text-number)]">
-                        {item.amount?.toLocaleString()}
+                      <TableCell className="whitespace-nowrap text-right font-mono text-sm text-warning-urgent">
+                        {item.direction === 'payable' ? (
+                          item.amount?.toLocaleString()
+                        ) : (
+                          <span className="text-[var(--text-muted)]">-</span>
+                        )}
                       </TableCell>
                       <TableCell className="whitespace-nowrap text-xs text-[var(--text-secondary)]">
                         {item.due_date ?? '-'}
@@ -335,41 +418,15 @@ export function OutstandingContent({ initialContracts, initialCounterparties }: 
                 <TableHead>거래상대방</TableHead>
                 <TableHead>계약번호</TableHead>
                 <TableHead>통화</TableHead>
-                <TableHead>방향</TableHead>
-                <TableHead className="text-right">미청산 금액</TableHead>
+                <TableHead className="text-right text-success">수취 금액</TableHead>
+                <TableHead className="text-right text-warning-urgent">지급 금액</TableHead>
                 <TableHead>만기일</TableHead>
                 <TableHead>Aging</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {filtered.map((item, idx) => (
-                <TableRow key={idx}>
-                  <TableCell className="whitespace-nowrap min-w-[120px] text-sm">
-                    {item.counterparty_name}
-                  </TableCell>
-                  <TableCell className="whitespace-nowrap text-xs font-mono">
-                    {item.contract_no}
-                  </TableCell>
-                  <TableCell className="whitespace-nowrap text-xs font-mono">
-                    {item.currency_code}
-                  </TableCell>
-                  <TableCell className="whitespace-nowrap">
-                    <Badge variant={item.direction === 'receivable' ? 'success' : 'warning'}>
-                      {item.direction === 'receivable' ? '수취' : '지급'}
-                    </Badge>
-                  </TableCell>
-                  <TableCell className="whitespace-nowrap text-right font-mono text-sm text-[var(--text-number)]">
-                    {item.amount?.toLocaleString()}
-                  </TableCell>
-                  <TableCell className="whitespace-nowrap text-xs text-[var(--text-secondary)]">
-                    {item.due_date ?? '-'}
-                  </TableCell>
-                  <TableCell
-                    className={`whitespace-nowrap text-xs font-medium ${AGING_COLORS[item.aging_bucket] ?? ''}`}
-                  >
-                    {agingBucketLabel(item.aging_bucket)}
-                  </TableCell>
-                </TableRow>
+                <DetailRow key={idx} item={item} />
               ))}
               {filtered.length === 0 && (
                 <TableRow>
