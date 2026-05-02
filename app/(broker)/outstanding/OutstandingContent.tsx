@@ -86,6 +86,7 @@ export function OutstandingContent({ initialContracts, initialCounterparties }: 
   const [filterCedantId, setFilterCedantId] = useState('')
   const [filterContractId, setFilterContractId] = useState('all')
   const [filterCounterpartyId, setFilterCounterpartyId] = useState('all')
+  const [filterDetailCounterparty, setFilterDetailCounterparty] = useState('all')
 
   // KPI 카드 선택 상태 (통화 + 방향)
   const [kpiSelected, setKpiSelected] = useState<KpiSelection | null>(null)
@@ -99,6 +100,10 @@ export function OutstandingContent({ initialContracts, initialCounterparties }: 
       setFilterContractId('all')
     }
   }, [filterContractId, contractsForSelect])
+
+  useEffect(() => {
+    setFilterDetailCounterparty('all')
+  }, [filterCounterpartyId, filterContractId, filterCedantId])
 
   const scopeCounterpartyId = filterCounterpartyId !== 'all' ? filterCounterpartyId : undefined
   const scopeContractId = filterContractId !== 'all' ? filterContractId : undefined
@@ -138,14 +143,21 @@ export function OutstandingContent({ initialContracts, initialCounterparties }: 
   const filtered = items.filter((item) => {
     if (filterCurrency !== 'all' && item.currency_code !== filterCurrency) return false
     if (filterDirection !== 'all' && item.direction !== filterDirection) return false
+    if (filterDetailCounterparty !== 'all' && item.counterparty_id !== filterDetailCounterparty)
+      return false
     return true
   })
 
   const currencies = Array.from(new Set(items.map((i) => i.currency_code)))
+  const detailCounterparties = Array.from(
+    new Map(items.map((i) => [i.counterparty_id, i.counterparty_name])).entries()
+  ).sort((a, b) => a[1].localeCompare(b[1]))
 
   // 통화가 선택된 경우에만 합계 계산
   const currencySelected = filterCurrency !== 'all'
-  const byCurrency = currencySelected ? items.filter((i) => i.currency_code === filterCurrency) : []
+  const byCurrency = currencySelected
+    ? filtered.filter((i) => i.currency_code === filterCurrency)
+    : []
   const receivableTotal = byCurrency
     .filter((i) => i.direction === 'receivable')
     .reduce((s, i) => s + i.amount, 0)
@@ -333,8 +345,21 @@ export function OutstandingContent({ initialContracts, initialCounterparties }: 
           />
         </div>
 
-        {/* 상세 통화 + 방향 필터 & 합계 */}
+        {/* 상세 통화 + 방향 + 거래상대방 필터 & 합계 */}
         <div className="flex flex-wrap items-center gap-3">
+          <Select value={filterDetailCounterparty} onValueChange={setFilterDetailCounterparty}>
+            <SelectTrigger className="w-44">
+              <SelectValue placeholder="전체 거래상대방" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">전체 거래상대방</SelectItem>
+              {detailCounterparties.map(([id, name]) => (
+                <SelectItem key={id} value={id}>
+                  {name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
           <Select value={filterCurrency} onValueChange={setFilterCurrency}>
             <SelectTrigger className="w-28">
               <SelectValue />
