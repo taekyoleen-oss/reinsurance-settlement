@@ -11,11 +11,13 @@ import {
   TableRow,
 } from '@/components/ui/table'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Badge } from '@/components/ui/badge'
 import type { ReconciliationItemWithRelations, ReconciliationStatus } from '@/types'
 
 function fmt(n: number) {
-  return new Intl.NumberFormat('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(n)
+  return new Intl.NumberFormat('en-US', {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  }).format(n)
 }
 
 const STATUS_STYLE: Record<ReconciliationStatus, { label: string; class: string }> = {
@@ -52,7 +54,9 @@ export function ReconciliationGrid({ contractId, counterpartyId }: Reconciliatio
       </CardHeader>
       <CardContent className="p-0">
         {loading ? (
-          <div className="p-4 text-center text-sm text-[var(--text-muted)] animate-pulse">로딩 중...</div>
+          <div className="p-4 text-center text-sm text-[var(--text-muted)] animate-pulse">
+            로딩 중...
+          </div>
         ) : items.length === 0 ? (
           <div className="p-4 text-center text-sm text-[var(--text-muted)]">대사 항목 없음</div>
         ) : (
@@ -72,9 +76,11 @@ export function ReconciliationGrid({ contractId, counterpartyId }: Reconciliatio
             <TableBody>
               {items.map((item) => {
                 const st = STATUS_STYLE[item.status]
-                const diff = item.difference ?? (item.counterparty_claimed_amount != null
-                  ? item.broker_amount - item.counterparty_claimed_amount
-                  : null)
+                const diff =
+                  item.difference ??
+                  (item.counterparty_claimed_amount != null
+                    ? item.broker_amount - item.counterparty_claimed_amount
+                    : null)
                 return (
                   <TableRow
                     key={item.id}
@@ -82,30 +88,34 @@ export function ReconciliationGrid({ contractId, counterpartyId }: Reconciliatio
                       item.status === 'matched'
                         ? ''
                         : item.status === 'disputed'
-                        ? 'bg-amber-900/10'
-                        : 'bg-red-900/10'
+                          ? 'bg-amber-900/10'
+                          : 'bg-red-900/10'
                     }
                   >
-                    <TableCell className="text-xs text-[var(--text-secondary)]">
+                    <TableCell className="whitespace-nowrap text-xs text-[var(--text-secondary)]">
                       {format(new Date(item.period_from), 'yyyy-MM-dd')} ~{' '}
                       {format(new Date(item.period_to), 'yyyy-MM-dd')}
                     </TableCell>
-                    <TableCell className="text-xs">
+                    <TableCell className="whitespace-nowrap min-w-[120px] text-xs">
                       {item.counterparty?.company_name_ko ?? item.counterparty_id.slice(0, 8)}
                     </TableCell>
-                    <TableCell className="text-xs">
+                    <TableCell className="whitespace-nowrap text-xs">
                       {item.contract?.contract_no ?? item.contract_id.slice(0, 8)}
                     </TableCell>
-                    <TableCell className="text-xs text-[var(--text-secondary)]">
+                    <TableCell className="whitespace-nowrap text-xs text-[var(--text-secondary)]">
                       {item.transaction_type}
                     </TableCell>
                     <TableCell className="font-mono text-right text-[var(--text-number)]">
                       {fmt(item.broker_amount)}
                     </TableCell>
                     <TableCell className="font-mono text-right text-[var(--text-number)]">
-                      {item.counterparty_claimed_amount != null ? fmt(item.counterparty_claimed_amount) : '-'}
+                      {item.counterparty_claimed_amount != null
+                        ? fmt(item.counterparty_claimed_amount)
+                        : '-'}
                     </TableCell>
-                    <TableCell className={`font-mono text-right ${diff != null && diff !== 0 ? 'text-warning-urgent font-semibold' : 'text-[var(--text-muted)]'}`}>
+                    <TableCell
+                      className={`font-mono text-right ${diff != null && diff !== 0 ? 'text-warning-urgent font-semibold' : 'text-[var(--text-muted)]'}`}
+                    >
                       {diff != null ? fmt(diff) : '-'}
                     </TableCell>
                     <TableCell>

@@ -4,11 +4,7 @@ import { cn } from '@/lib/utils/cn'
 const Table = React.forwardRef<HTMLTableElement, React.HTMLAttributes<HTMLTableElement>>(
   ({ className, ...props }, ref) => (
     <div className="relative w-full overflow-auto">
-      <table
-        ref={ref}
-        className={cn('w-full caption-bottom text-sm', className)}
-        {...props}
-      />
+      <table ref={ref} className={cn('w-full caption-bottom text-sm', className)} {...props} />
     </div>
   )
 )
@@ -26,11 +22,7 @@ const TableBody = React.forwardRef<
   HTMLTableSectionElement,
   React.HTMLAttributes<HTMLTableSectionElement>
 >(({ className, ...props }, ref) => (
-  <tbody
-    ref={ref}
-    className={cn('[&_tr:last-child]:border-0', className)}
-    {...props}
-  />
+  <tbody ref={ref} className={cn('[&_tr:last-child]:border-0', className)} {...props} />
 ))
 TableBody.displayName = 'TableBody'
 
@@ -40,7 +32,10 @@ const TableFooter = React.forwardRef<
 >(({ className, ...props }, ref) => (
   <tfoot
     ref={ref}
-    className={cn('border-t border-border bg-surface-elevated font-medium [&>tr]:last:border-b-0', className)}
+    className={cn(
+      'border-t border-border bg-surface-elevated font-medium [&>tr]:last:border-b-0',
+      className
+    )}
     {...props}
   />
 ))
@@ -67,7 +62,7 @@ const TableHead = React.forwardRef<
   <th
     ref={ref}
     className={cn(
-      'h-8 px-3 text-left align-middle text-xs font-semibold text-[var(--text-muted)] uppercase tracking-wide [&:has([role=checkbox])]:pr-0',
+      'h-8 px-3 text-left align-middle text-xs font-semibold text-[var(--text-muted)] uppercase tracking-wide whitespace-nowrap [&:has([role=checkbox])]:pr-0',
       className
     )}
     {...props}
@@ -81,7 +76,10 @@ const TableCell = React.forwardRef<
 >(({ className, ...props }, ref) => (
   <td
     ref={ref}
-    className={cn('px-3 py-2 align-middle text-[var(--text-primary)] [&:has([role=checkbox])]:pr-0', className)}
+    className={cn(
+      'px-3 py-2 align-middle text-[var(--text-primary)] [&:has([role=checkbox])]:pr-0',
+      className
+    )}
     {...props}
   />
 ))
@@ -99,13 +97,4 @@ const TableCaption = React.forwardRef<
 ))
 TableCaption.displayName = 'TableCaption'
 
-export {
-  Table,
-  TableHeader,
-  TableBody,
-  TableFooter,
-  TableHead,
-  TableRow,
-  TableCell,
-  TableCaption,
-}
+export { Table, TableHeader, TableBody, TableFooter, TableHead, TableRow, TableCell, TableCaption }

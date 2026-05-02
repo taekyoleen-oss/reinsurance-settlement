@@ -206,17 +206,17 @@ export default function SettlementsPage() {
           <TableBody>
             {settlements.map((s) => (
               <TableRow key={s.id}>
-                <TableCell className="text-xs font-mono text-[var(--text-secondary)]">
+                <TableCell className="whitespace-nowrap text-xs font-mono text-[var(--text-secondary)]">
                   {s.settlement_no}
                 </TableCell>
-                <TableCell className="text-xs font-mono text-[var(--text-secondary)]">
+                <TableCell className="whitespace-nowrap text-xs font-mono text-[var(--text-secondary)]">
                   {format(new Date(s.settlement_date), 'yyyy-MM-dd')}
                 </TableCell>
-                <TableCell className="text-xs">
+                <TableCell className="whitespace-nowrap min-w-[120px] text-xs">
                   {counterparties.find((cp) => cp.id === s.counterparty_id)?.company_name_ko ??
                     s.counterparty_id.slice(0, 8)}
                 </TableCell>
-                <TableCell className="text-xs">
+                <TableCell className="whitespace-nowrap text-xs">
                   {TYPE_LABELS[s.settlement_type] ?? s.settlement_type}
                 </TableCell>
                 <TableCell className="text-right font-mono text-sm text-[var(--text-number)]">

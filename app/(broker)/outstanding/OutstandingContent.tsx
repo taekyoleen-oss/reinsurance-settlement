@@ -2,11 +2,22 @@
 
 import { useEffect, useRef, useState } from 'react'
 import { Label } from '@/components/ui/label'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 import { OutstandingKPICard } from '@/components/dashboard/OutstandingKPICard'
 import { AgingAnalysisTable } from '@/components/dashboard/AgingAnalysisTable'
 import {
-  Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
 } from '@/components/ui/table'
 import { Badge } from '@/components/ui/badge'
 import { AlertCircle } from 'lucide-react'
@@ -29,21 +40,27 @@ interface OutstandingItem {
 
 function agingBucketLabel(b: string): string {
   switch (b) {
-    case 'current':   return '정상'
-    case '1-30':      return '1–30일 경과'
-    case '31-60':     return '31–60일 경과'
-    case '61-90':     return '61–90일 경과'
-    case '90+':       return '90일 초과'
-    default:          return b
+    case 'current':
+      return '정상'
+    case '1-30':
+      return '1–30일 경과'
+    case '31-60':
+      return '31–60일 경과'
+    case '61-90':
+      return '61–90일 경과'
+    case '90+':
+      return '90일 초과'
+    default:
+      return b
   }
 }
 
 const AGING_COLORS: Record<string, string> = {
-  current:  'text-[var(--success)]',
-  '1-30':   'text-[var(--warning)]',
-  '31-60':  'text-orange-500',
-  '61-90':  'text-red-500',
-  '90+':    'text-[var(--warning-urgent)]',
+  current: 'text-[var(--success)]',
+  '1-30': 'text-[var(--warning)]',
+  '31-60': 'text-orange-500',
+  '61-90': 'text-red-500',
+  '90+': 'text-[var(--warning-urgent)]',
 }
 
 interface Props {
@@ -63,7 +80,9 @@ export function OutstandingContent({ initialContracts, initialCounterparties }: 
   const [filterContractId, setFilterContractId] = useState('all')
   const [filterCounterpartyId, setFilterCounterpartyId] = useState('all')
 
-  const contractsForSelect = contracts.filter((c) => !filterCedantId || c.cedant_id === filterCedantId)
+  const contractsForSelect = contracts.filter(
+    (c) => !filterCedantId || c.cedant_id === filterCedantId
+  )
 
   useEffect(() => {
     if (filterContractId !== 'all' && !contractsForSelect.some((c) => c.id === filterContractId)) {
@@ -72,8 +91,8 @@ export function OutstandingContent({ initialContracts, initialCounterparties }: 
   }, [filterContractId, contractsForSelect])
 
   const scopeCounterpartyId = filterCounterpartyId !== 'all' ? filterCounterpartyId : undefined
-  const scopeContractId     = filterContractId !== 'all' ? filterContractId : undefined
-  const scopeCedantId       = filterCedantId || undefined
+  const scopeContractId = filterContractId !== 'all' ? filterContractId : undefined
+  const scopeCedantId = filterCedantId || undefined
 
   useEffect(() => {
     let cancelled = false
@@ -83,8 +102,8 @@ export function OutstandingContent({ initialContracts, initialCounterparties }: 
     const params = new URLSearchParams()
     params.set('type', 'detail')
     if (scopeCounterpartyId) params.set('counterpartyId', scopeCounterpartyId)
-    if (scopeContractId)     params.set('contractId', scopeContractId)
-    if (scopeCedantId)       params.set('cedant_id', scopeCedantId)
+    if (scopeContractId) params.set('contractId', scopeContractId)
+    if (scopeCedantId) params.set('cedant_id', scopeCedantId)
 
     fetch(`/api/outstanding?${params}`, { cache: 'no-store' })
       .then((r) => {
@@ -94,10 +113,16 @@ export function OutstandingContent({ initialContracts, initialCounterparties }: 
       .then((d) => {
         if (!cancelled) setItems(d.data ?? [])
       })
-      .catch(() => { if (!cancelled) setItems([]) })
-      .finally(() => { if (!cancelled) setLoading(false) })
+      .catch(() => {
+        if (!cancelled) setItems([])
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false)
+      })
 
-    return () => { cancelled = true }
+    return () => {
+      cancelled = true
+    }
   }, [scopeCounterpartyId, scopeContractId, scopeCedantId])
 
   const filtered = items.filter((item) => {
@@ -123,7 +148,9 @@ export function OutstandingContent({ initialContracts, initialCounterparties }: 
     <div className="space-y-6">
       <div>
         <h1 className="text-2xl font-bold text-[var(--text-primary)]">미청산 잔액</h1>
-        <p className="text-sm text-[var(--text-secondary)] mt-1">거래상대방·출재사·특약·통화별 미청산 현황 및 Aging</p>
+        <p className="text-sm text-[var(--text-secondary)] mt-1">
+          거래상대방·출재사·특약·통화별 미청산 현황 및 Aging
+        </p>
       </div>
 
       <div className="flex flex-wrap items-end gap-3">
@@ -133,9 +160,13 @@ export function OutstandingContent({ initialContracts, initialCounterparties }: 
           triggerClassName="h-9 w-[min(100%,14rem)]"
         />
         <div className="flex min-w-[220px] flex-col gap-1.5">
-          <Label className="text-[10px] font-medium uppercase text-[var(--text-muted)]">특약/계약</Label>
+          <Label className="text-[10px] font-medium uppercase text-[var(--text-muted)]">
+            특약/계약
+          </Label>
           <Select value={filterContractId} onValueChange={setFilterContractId}>
-            <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
+            <SelectTrigger className="h-9">
+              <SelectValue />
+            </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">전체 계약</SelectItem>
               {contractsForSelect.map((c) => (
@@ -147,9 +178,13 @@ export function OutstandingContent({ initialContracts, initialCounterparties }: 
           </Select>
         </div>
         <div className="flex min-w-[180px] flex-col gap-1.5">
-          <Label className="text-[10px] font-medium uppercase text-[var(--text-muted)]">회사(거래상대방)</Label>
+          <Label className="text-[10px] font-medium uppercase text-[var(--text-muted)]">
+            회사(거래상대방)
+          </Label>
           <Select value={filterCounterpartyId} onValueChange={setFilterCounterpartyId}>
-            <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
+            <SelectTrigger className="h-9">
+              <SelectValue />
+            </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">전체 회사</SelectItem>
               {counterparties
@@ -186,14 +221,22 @@ export function OutstandingContent({ initialContracts, initialCounterparties }: 
 
         <div className="flex gap-3">
           <Select value={filterCurrency} onValueChange={setFilterCurrency}>
-            <SelectTrigger className="w-28"><SelectValue /></SelectTrigger>
+            <SelectTrigger className="w-28">
+              <SelectValue />
+            </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">전체 통화</SelectItem>
-              {currencies.map((c) => <SelectItem key={c} value={c}>{c}</SelectItem>)}
+              {currencies.map((c) => (
+                <SelectItem key={c} value={c}>
+                  {c}
+                </SelectItem>
+              ))}
             </SelectContent>
           </Select>
           <Select value={filterDirection} onValueChange={setFilterDirection}>
-            <SelectTrigger className="w-32"><SelectValue /></SelectTrigger>
+            <SelectTrigger className="w-32">
+              <SelectValue />
+            </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">전체 방향</SelectItem>
               <SelectItem value="receivable">수취</SelectItem>
@@ -203,7 +246,9 @@ export function OutstandingContent({ initialContracts, initialCounterparties }: 
         </div>
 
         {loading ? (
-          <div className="p-8 text-center text-sm text-[var(--text-muted)] animate-pulse">로딩 중...</div>
+          <div className="p-8 text-center text-sm text-[var(--text-muted)] animate-pulse">
+            로딩 중...
+          </div>
         ) : useVirtualRows ? (
           /* 가상화 테이블 (100행 초과) */
           <div
@@ -223,9 +268,7 @@ export function OutstandingContent({ initialContracts, initialCounterparties }: 
                   <TableHead>Aging</TableHead>
                 </TableRow>
               </TableHeader>
-              <TableBody
-                style={{ height: rowVirtualizer.getTotalSize(), position: 'relative' }}
-              >
+              <TableBody style={{ height: rowVirtualizer.getTotalSize(), position: 'relative' }}>
                 {virtualRows.map((vRow) => {
                   const item = filtered[vRow.index]
                   return (
@@ -240,19 +283,29 @@ export function OutstandingContent({ initialContracts, initialCounterparties }: 
                         transform: `translateY(${vRow.start}px)`,
                       }}
                     >
-                      <TableCell className="text-sm">{item.counterparty_name}</TableCell>
-                      <TableCell className="text-xs font-mono">{item.contract_no}</TableCell>
-                      <TableCell className="text-xs font-mono">{item.currency_code}</TableCell>
-                      <TableCell>
+                      <TableCell className="whitespace-nowrap min-w-[120px] text-sm">
+                        {item.counterparty_name}
+                      </TableCell>
+                      <TableCell className="whitespace-nowrap text-xs font-mono">
+                        {item.contract_no}
+                      </TableCell>
+                      <TableCell className="whitespace-nowrap text-xs font-mono">
+                        {item.currency_code}
+                      </TableCell>
+                      <TableCell className="whitespace-nowrap">
                         <Badge variant={item.direction === 'receivable' ? 'success' : 'warning'}>
                           {item.direction === 'receivable' ? '수취' : '지급'}
                         </Badge>
                       </TableCell>
-                      <TableCell className="text-right font-mono text-sm text-[var(--text-number)]">
+                      <TableCell className="whitespace-nowrap text-right font-mono text-sm text-[var(--text-number)]">
                         {item.amount?.toLocaleString()}
                       </TableCell>
-                      <TableCell className="text-xs text-[var(--text-secondary)]">{item.due_date ?? '-'}</TableCell>
-                      <TableCell className={`text-xs font-medium ${AGING_COLORS[item.aging_bucket] ?? ''}`}>
+                      <TableCell className="whitespace-nowrap text-xs text-[var(--text-secondary)]">
+                        {item.due_date ?? '-'}
+                      </TableCell>
+                      <TableCell
+                        className={`whitespace-nowrap text-xs font-medium ${AGING_COLORS[item.aging_bucket] ?? ''}`}
+                      >
                         {agingBucketLabel(item.aging_bucket)}
                       </TableCell>
                     </TableRow>
@@ -278,19 +331,29 @@ export function OutstandingContent({ initialContracts, initialCounterparties }: 
             <TableBody>
               {filtered.map((item, idx) => (
                 <TableRow key={idx}>
-                  <TableCell className="text-sm">{item.counterparty_name}</TableCell>
-                  <TableCell className="text-xs font-mono">{item.contract_no}</TableCell>
-                  <TableCell className="text-xs font-mono">{item.currency_code}</TableCell>
-                  <TableCell>
+                  <TableCell className="whitespace-nowrap min-w-[120px] text-sm">
+                    {item.counterparty_name}
+                  </TableCell>
+                  <TableCell className="whitespace-nowrap text-xs font-mono">
+                    {item.contract_no}
+                  </TableCell>
+                  <TableCell className="whitespace-nowrap text-xs font-mono">
+                    {item.currency_code}
+                  </TableCell>
+                  <TableCell className="whitespace-nowrap">
                     <Badge variant={item.direction === 'receivable' ? 'success' : 'warning'}>
                       {item.direction === 'receivable' ? '수취' : '지급'}
                     </Badge>
                   </TableCell>
-                  <TableCell className="text-right font-mono text-sm text-[var(--text-number)]">
+                  <TableCell className="whitespace-nowrap text-right font-mono text-sm text-[var(--text-number)]">
                     {item.amount?.toLocaleString()}
                   </TableCell>
-                  <TableCell className="text-xs text-[var(--text-secondary)]">{item.due_date ?? '-'}</TableCell>
-                  <TableCell className={`text-xs font-medium ${AGING_COLORS[item.aging_bucket] ?? ''}`}>
+                  <TableCell className="whitespace-nowrap text-xs text-[var(--text-secondary)]">
+                    {item.due_date ?? '-'}
+                  </TableCell>
+                  <TableCell
+                    className={`whitespace-nowrap text-xs font-medium ${AGING_COLORS[item.aging_bucket] ?? ''}`}
+                  >
                     {agingBucketLabel(item.aging_bucket)}
                   </TableCell>
                 </TableRow>

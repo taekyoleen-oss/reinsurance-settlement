@@ -30,7 +30,7 @@ const TX_TYPE_LABELS: Record<string, string> = {
   adjustment: '조정',
 }
 
-function fmt(n: number, currency: string) {
+function fmt(n: number, _currency: string) {
   return new Intl.NumberFormat('en-US', {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
@@ -63,39 +63,30 @@ export function TransactionTable({ transactions, onDelete }: TransactionTablePro
       </TableHeader>
       <TableBody>
         {transactions.map((tx) => (
-          <TableRow
-            key={tx.id}
-            className={tx.is_allocation_parent ? 'opacity-60' : ''}
-          >
+          <TableRow key={tx.id} className={tx.is_allocation_parent ? 'opacity-60' : ''}>
             <TableCell>
               <div className="flex items-center gap-1.5">
-                {tx.is_allocation_parent && (
-                  <GitBranch className="h-3 w-3 text-accent shrink-0" />
-                )}
-                {tx.is_locked && (
-                  <Lock className="h-3 w-3 text-[var(--text-muted)] shrink-0" />
-                )}
+                {tx.is_allocation_parent && <GitBranch className="h-3 w-3 text-accent shrink-0" />}
+                {tx.is_locked && <Lock className="h-3 w-3 text-[var(--text-muted)] shrink-0" />}
                 <span className="font-mono text-xs text-[var(--text-secondary)]">
                   {tx.transaction_no}
                 </span>
               </div>
             </TableCell>
-            <TableCell className="text-xs text-[var(--text-secondary)]">
+            <TableCell className="whitespace-nowrap text-xs text-[var(--text-secondary)]">
               {format(new Date(tx.transaction_date), 'yyyy-MM-dd')}
             </TableCell>
-            <TableCell className="text-xs">
+            <TableCell className="whitespace-nowrap text-xs">
               {tx.contract?.contract_no ?? tx.contract_id.slice(0, 8)}
             </TableCell>
-            <TableCell className="text-xs">
+            <TableCell className="whitespace-nowrap min-w-[120px] text-xs">
               {tx.counterparty?.company_name_ko ?? tx.counterparty_id.slice(0, 8)}
             </TableCell>
-            <TableCell className="text-xs">
+            <TableCell className="whitespace-nowrap text-xs">
               {TX_TYPE_LABELS[tx.transaction_type] ?? tx.transaction_type}
             </TableCell>
             <TableCell className="font-mono text-right text-[var(--text-number)]">
-              {tx.direction === 'payable' && (
-                <span className="text-warning-urgent mr-0.5">-</span>
-              )}
+              {tx.direction === 'payable' && <span className="text-warning-urgent mr-0.5">-</span>}
               {fmt(tx.amount_original, tx.currency_code)}
             </TableCell>
             <TableCell className="text-xs text-[var(--text-secondary)]">

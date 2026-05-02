@@ -6,9 +6,20 @@ import { format } from 'date-fns'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import {
-  Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
 } from '@/components/ui/table'
 import { StatusBadge } from '@/components/shared/StatusBadge'
 import { CedantFilterSelect } from '@/components/contracts/CedantFilterSelect'
@@ -36,7 +47,9 @@ export function AccountCurrentsList({ initialContracts, initialCounterparties }:
   const [dateTo, setDateTo] = useState('')
   const [search, setSearch] = useState('')
 
-  const contractsForSelect = contracts.filter((c) => !filterCedantId || c.cedant_id === filterCedantId)
+  const contractsForSelect = contracts.filter(
+    (c) => !filterCedantId || c.cedant_id === filterCedantId
+  )
 
   useEffect(() => {
     if (filterContractId !== 'all' && !contractsForSelect.some((c) => c.id === filterContractId)) {
@@ -73,8 +86,12 @@ export function AccountCurrentsList({ initialContracts, initialCounterparties }:
       !search ||
       ac.ac_no?.toLowerCase().includes(search.toLowerCase()) ||
       ac.id.toLowerCase().includes(search.toLowerCase()) ||
-      (contracts.find((c) => c.id === ac.contract_id)?.contract_no ?? '').toLowerCase().includes(search.toLowerCase()) ||
-      (counterparties.find((cp) => cp.id === ac.counterparty_id)?.company_name_ko ?? '').toLowerCase().includes(search.toLowerCase())
+      (contracts.find((c) => c.id === ac.contract_id)?.contract_no ?? '')
+        .toLowerCase()
+        .includes(search.toLowerCase()) ||
+      (counterparties.find((cp) => cp.id === ac.counterparty_id)?.company_name_ko ?? '')
+        .toLowerCase()
+        .includes(search.toLowerCase())
   )
 
   return (
@@ -99,7 +116,9 @@ export function AccountCurrentsList({ initialContracts, initialCounterparties }:
           triggerClassName="h-9 w-[min(100%,14rem)]"
         />
         <div className="flex min-w-[220px] flex-col gap-1.5">
-          <Label className="text-[10px] font-medium uppercase text-[var(--text-muted)]">특약/계약</Label>
+          <Label className="text-[10px] font-medium uppercase text-[var(--text-muted)]">
+            특약/계약
+          </Label>
           <Select value={filterContractId} onValueChange={setFilterContractId}>
             <SelectTrigger className="h-9">
               <SelectValue />
@@ -115,7 +134,9 @@ export function AccountCurrentsList({ initialContracts, initialCounterparties }:
           </Select>
         </div>
         <div className="flex min-w-[180px] flex-col gap-1.5">
-          <Label className="text-[10px] font-medium uppercase text-[var(--text-muted)]">회사(수재사)</Label>
+          <Label className="text-[10px] font-medium uppercase text-[var(--text-muted)]">
+            회사(수재사)
+          </Label>
           <Select value={filterCounterpartyId} onValueChange={setFilterCounterpartyId}>
             <SelectTrigger className="h-9">
               <SelectValue />
@@ -133,12 +154,26 @@ export function AccountCurrentsList({ initialContracts, initialCounterparties }:
           </Select>
         </div>
         <div className="flex flex-col gap-1.5">
-          <Label className="text-[10px] font-medium uppercase text-[var(--text-muted)]">시작일</Label>
-          <Input type="date" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)} className="h-9 w-40" />
+          <Label className="text-[10px] font-medium uppercase text-[var(--text-muted)]">
+            시작일
+          </Label>
+          <Input
+            type="date"
+            value={dateFrom}
+            onChange={(e) => setDateFrom(e.target.value)}
+            className="h-9 w-40"
+          />
         </div>
         <div className="flex flex-col gap-1.5">
-          <Label className="text-[10px] font-medium uppercase text-[var(--text-muted)]">종료일</Label>
-          <Input type="date" value={dateTo} onChange={(e) => setDateTo(e.target.value)} className="h-9 w-40" />
+          <Label className="text-[10px] font-medium uppercase text-[var(--text-muted)]">
+            종료일
+          </Label>
+          <Input
+            type="date"
+            value={dateTo}
+            onChange={(e) => setDateTo(e.target.value)}
+            className="h-9 w-40"
+          />
         </div>
         <Input
           placeholder="정산서 번호 검색..."
@@ -170,7 +205,9 @@ export function AccountCurrentsList({ initialContracts, initialCounterparties }:
       )}
 
       {loading ? (
-        <div className="p-8 text-center text-sm text-[var(--text-muted)] animate-pulse">로딩 중...</div>
+        <div className="p-8 text-center text-sm text-[var(--text-muted)] animate-pulse">
+          로딩 중...
+        </div>
       ) : (
         <Table>
           <TableHeader>
@@ -189,14 +226,18 @@ export function AccountCurrentsList({ initialContracts, initialCounterparties }:
           <TableBody>
             {filtered.map((ac) => (
               <TableRow key={ac.id}>
-                <TableCell className="font-mono text-xs">{ac.ac_no ?? ac.id.slice(0, 8)}</TableCell>
-                <TableCell className="text-xs">
-                  {contracts.find((c) => c.id === ac.contract_id)?.contract_no ?? ac.contract_id.slice(0, 8)}
+                <TableCell className="whitespace-nowrap font-mono text-xs">
+                  {ac.ac_no ?? ac.id.slice(0, 8)}
                 </TableCell>
-                <TableCell className="text-xs">
-                  {counterparties.find((cp) => cp.id === ac.counterparty_id)?.company_name_ko ?? ac.counterparty_id.slice(0, 8)}
+                <TableCell className="whitespace-nowrap text-xs">
+                  {contracts.find((c) => c.id === ac.contract_id)?.contract_no ??
+                    ac.contract_id.slice(0, 8)}
                 </TableCell>
-                <TableCell className="text-xs text-[var(--text-secondary)]">
+                <TableCell className="whitespace-nowrap min-w-[120px] text-xs">
+                  {counterparties.find((cp) => cp.id === ac.counterparty_id)?.company_name_ko ??
+                    ac.counterparty_id.slice(0, 8)}
+                </TableCell>
+                <TableCell className="whitespace-nowrap text-xs text-[var(--text-secondary)]">
                   {ac.period_from} ~ {ac.period_to}
                 </TableCell>
                 <TableCell className="text-right font-mono text-sm text-[var(--text-number)]">
@@ -213,7 +254,9 @@ export function AccountCurrentsList({ initialContracts, initialCounterparties }:
                 </TableCell>
                 <TableCell className="text-right">
                   <Link href={`/account-currents/${ac.id}`}>
-                    <Button size="sm" variant="ghost">상세</Button>
+                    <Button size="sm" variant="ghost">
+                      상세
+                    </Button>
                   </Link>
                 </TableCell>
               </TableRow>
@@ -221,7 +264,9 @@ export function AccountCurrentsList({ initialContracts, initialCounterparties }:
             {filtered.length === 0 && (
               <TableRow>
                 <TableCell colSpan={9} className="text-center text-[var(--text-muted)] py-8">
-                  {acs.length === 0 ? '정산서 데이터가 없습니다.' : '검색/필터 조건에 맞는 정산서가 없습니다.'}
+                  {acs.length === 0
+                    ? '정산서 데이터가 없습니다.'
+                    : '검색/필터 조건에 맞는 정산서가 없습니다.'}
                 </TableCell>
               </TableRow>
             )}

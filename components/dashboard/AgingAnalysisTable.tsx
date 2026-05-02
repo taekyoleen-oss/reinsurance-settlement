@@ -23,7 +23,10 @@ interface AgingRow {
 }
 
 function fmt(n: number) {
-  return new Intl.NumberFormat('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(n)
+  return new Intl.NumberFormat('en-US', {
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 0,
+  }).format(n)
 }
 
 export interface OutstandingScopeProps {
@@ -80,7 +83,9 @@ export function AgingAnalysisTable({
       </CardHeader>
       <CardContent className="p-0">
         {loading ? (
-          <div className="p-4 text-center text-[var(--text-muted)] text-sm animate-pulse">로딩 중...</div>
+          <div className="p-4 text-center text-[var(--text-muted)] text-sm animate-pulse">
+            로딩 중...
+          </div>
         ) : rows.length === 0 ? (
           <div className="p-4 text-center text-[var(--text-muted)] text-sm">데이터 없음</div>
         ) : (
@@ -100,14 +105,30 @@ export function AgingAnalysisTable({
             <TableBody>
               {rows.map((row, idx) => (
                 <TableRow key={idx}>
-                  <TableCell className="text-[var(--text-primary)]">{row.counterparty}</TableCell>
-                  <TableCell className="text-[var(--text-secondary)]">{row.currency}</TableCell>
-                  <TableCell className="font-mono text-right text-[var(--text-number)]">{fmt(row.current)}</TableCell>
-                  <TableCell className="font-mono text-right text-[var(--text-number)]">{fmt(row.days_1_30)}</TableCell>
-                  <TableCell className="font-mono text-right text-warning">{fmt(row.days_31_60)}</TableCell>
-                  <TableCell className="font-mono text-right text-warning">{fmt(row.days_61_90)}</TableCell>
-                  <TableCell className="font-mono text-right text-warning-urgent">{fmt(row.days_over_90)}</TableCell>
-                  <TableCell className="font-mono text-right font-semibold text-[var(--text-number)]">{fmt(row.total)}</TableCell>
+                  <TableCell className="whitespace-nowrap min-w-[120px] text-[var(--text-primary)]">
+                    {row.counterparty}
+                  </TableCell>
+                  <TableCell className="whitespace-nowrap text-[var(--text-secondary)]">
+                    {row.currency}
+                  </TableCell>
+                  <TableCell className="font-mono text-right text-[var(--text-number)]">
+                    {fmt(row.current)}
+                  </TableCell>
+                  <TableCell className="font-mono text-right text-[var(--text-number)]">
+                    {fmt(row.days_1_30)}
+                  </TableCell>
+                  <TableCell className="font-mono text-right text-warning">
+                    {fmt(row.days_31_60)}
+                  </TableCell>
+                  <TableCell className="font-mono text-right text-warning">
+                    {fmt(row.days_61_90)}
+                  </TableCell>
+                  <TableCell className="font-mono text-right text-warning-urgent">
+                    {fmt(row.days_over_90)}
+                  </TableCell>
+                  <TableCell className="font-mono text-right font-semibold text-[var(--text-number)]">
+                    {fmt(row.total)}
+                  </TableCell>
                 </TableRow>
               ))}
             </TableBody>
