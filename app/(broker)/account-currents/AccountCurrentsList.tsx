@@ -24,7 +24,7 @@ import {
 import { StatusBadge } from '@/components/shared/StatusBadge'
 import { TableExportButton } from '@/components/shared/TableExportButton'
 import { CedantFilterSelect } from '@/components/contracts/CedantFilterSelect'
-import { Plus } from 'lucide-react'
+import { Plus, Printer } from 'lucide-react'
 import { useContracts, useCounterparties } from '@/hooks/use-reference-data'
 import type { AccountCurrentRow, ContractWithCedantRow, CounterpartyRow } from '@/types'
 
@@ -102,12 +102,18 @@ export function AccountCurrentsList({ initialContracts, initialCounterparties }:
           <h1 className="text-2xl font-bold text-[var(--text-primary)]">정산서 관리</h1>
           <p className="text-sm text-[var(--text-secondary)] mt-1">Account Current 발행 및 관리</p>
         </div>
-        <Link href="/account-currents/new">
-          <Button>
-            <Plus className="h-4 w-4 mr-1" />
-            정산서 생성
+        <div className="flex items-center gap-2">
+          <Button variant="outline" size="sm" onClick={() => window.print()}>
+            <Printer className="h-4 w-4 mr-1" />
+            인쇄
           </Button>
-        </Link>
+          <Link href="/account-currents/new">
+            <Button>
+              <Plus className="h-4 w-4 mr-1" />
+              정산서 생성
+            </Button>
+          </Link>
+        </div>
       </div>
 
       <div className="flex flex-wrap items-end gap-3">

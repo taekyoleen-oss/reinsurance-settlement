@@ -19,12 +19,14 @@ export const GET = withUserAuth(async (_auth, req, ctx) => {
 
   switch (type) {
     case 'outstanding': {
-      data = await getOutstandingByCounterparty(
+      // getOutstandingByCounterparty returns OutstandingResult[] (summary), use detail for CSV
+      const detail = await getOutstandingByCounterparty(
         searchParams.get('counterpartyId') ?? undefined,
         searchParams.get('currencyCode') ?? undefined,
         searchParams.get('contractId') ?? undefined,
         searchParams.get('cedant_id')?.trim() || undefined
       )
+      data = detail
       break
     }
     case 'aging': {
