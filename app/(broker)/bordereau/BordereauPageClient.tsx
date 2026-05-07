@@ -50,38 +50,26 @@ export function BordereauPageClient() {
     if (tab === 'loss' || tab === 'premium') setActiveTab(tab)
   }, [searchParams])
 
-  const loadPremium = useCallback(async () => {
+  const loadAll = useCallback(async () => {
     setLoading(true)
     try {
       const params = new URLSearchParams()
       if (contractId) params.set('contractId', contractId)
       if (period) params.set('periodYyyyqn', period)
-      const res = await fetch(`/api/bordereau/premium?${params}`)
-      const json = await res.json()
-      setPremiumRows(json.data ?? [])
-    } finally {
-      setLoading(false)
-    }
-  }, [contractId, period])
-
-  const loadLoss = useCallback(async () => {
-    setLoading(true)
-    try {
-      const params = new URLSearchParams()
-      if (contractId) params.set('contractId', contractId)
-      if (period) params.set('periodYyyyqn', period)
-      const res = await fetch(`/api/bordereau/loss?${params}`)
-      const json = await res.json()
-      setLossRows(json.data ?? [])
+      const [premJson, lossJson] = await Promise.all([
+        fetch(`/api/bordereau/premium?${params}`).then((r) => r.json()),
+        fetch(`/api/bordereau/loss?${params}`).then((r) => r.json()),
+      ])
+      setPremiumRows(premJson.data ?? [])
+      setLossRows(lossJson.data ?? [])
     } finally {
       setLoading(false)
     }
   }, [contractId, period])
 
   useEffect(() => {
-    if (activeTab === 'premium') loadPremium()
-    else loadLoss()
-  }, [activeTab, loadPremium, loadLoss])
+    loadAll()
+  }, [loadAll])
 
   return (
     <div className="space-y-6">
@@ -157,12 +145,7 @@ export function BordereauPageClient() {
           />
         </div>
         <div className="flex items-end">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => (activeTab === 'premium' ? loadPremium() : loadLoss())}
-            disabled={loading}
-          >
+          <Button variant="outline" size="sm" onClick={() => loadAll()} disabled={loading}>
             <RefreshCw className={`mr-1.5 h-3.5 w-3.5 ${loading ? 'animate-spin' : ''}`} />
             조회
           </Button>
