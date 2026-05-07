@@ -25,6 +25,7 @@ export type {
   BordereauEntryType,
   LossStatus,
   ValidationStatus,
+  AttachmentEntityType,
 
   // Row 타입
   CurrencyRow,
@@ -45,6 +46,7 @@ export type {
   ShareTokenLogRow,
   PremiumBordereauRow,
   LossBordereauRow,
+  AttachmentRow,
 
   // Insert 타입
   CurrencyInsert,

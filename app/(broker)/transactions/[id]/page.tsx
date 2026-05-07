@@ -10,6 +10,7 @@ import { Badge } from '@/components/ui/badge'
 import { StatusBadge } from '@/components/shared/StatusBadge'
 import { ArrowLeft, Trash2, Lock } from 'lucide-react'
 import Link from 'next/link'
+import { AttachmentSection } from '@/components/shared/AttachmentSection'
 import type { TransactionRow } from '@/types'
 import type { ReactNode } from 'react'
 
@@ -128,6 +129,8 @@ export default function TransactionDetailPage() {
           </Badge>
         )}
       </div>
+
+      <AttachmentSection entityType="transaction" entityId={id} />
 
       <Card>
         <CardHeader>

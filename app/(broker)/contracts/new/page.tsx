@@ -4,7 +4,13 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { ContractBasicFields } from '@/components/contracts/ContractBasicFields'
 import { ContractSharesCard, type ShareEntry } from '@/components/contracts/ContractSharesCard'
@@ -13,6 +19,7 @@ import {
   ContractReserveSection,
   ContractSettlementTermsSection,
 } from '@/components/contracts/ContractTermsSections'
+import { AttachmentSection, uploadStagedFiles } from '@/components/shared/AttachmentSection'
 import { useCounterpartiesByType } from '@/hooks/use-reference-data'
 
 const INITIAL_FORM = {
@@ -50,6 +57,7 @@ export default function NewContractPage() {
     { reinsurer_id: '', signed_line: '', effective_from: '', effective_to: '' },
   ])
   const [facultativeReinsurer, setFacultativeReinsurer] = useState('')
+  const [stagedFiles, setStagedFiles] = useState<File[]>([])
 
   const set = (key: string) => (value: string) => setForm((p) => ({ ...p, [key]: value }))
   const totalSignedLine = shares.reduce((sum, s) => sum + (parseFloat(s.signed_line) || 0), 0)
@@ -88,7 +96,14 @@ export default function NewContractPage() {
           shares:
             form.contract_type === 'treaty'
               ? shares.map((s) => ({ ...s, signed_line: parseFloat(s.signed_line) / 100 }))
-              : [{ reinsurer_id: facultativeReinsurer, signed_line: 1, effective_from: form.inception_date, effective_to: form.expiry_date }],
+              : [
+                  {
+                    reinsurer_id: facultativeReinsurer,
+                    signed_line: 1,
+                    effective_from: form.inception_date,
+                    effective_to: form.expiry_date,
+                  },
+                ],
         }),
       })
 
@@ -98,7 +113,15 @@ export default function NewContractPage() {
         return
       }
 
+      const created = await res.json()
       toast.success('계약이 등록되었습니다.')
+      if (stagedFiles.length > 0 && created?.data?.id) {
+        try {
+          await uploadStagedFiles('contract', created.data.id, stagedFiles)
+        } catch (err: unknown) {
+          toast.error(`첨부 업로드 실패: ${err instanceof Error ? err.message : String(err)}`)
+        }
+      }
       router.push('/contracts')
     } catch {
       toast.error('서버 오류가 발생했습니다.')
@@ -125,14 +148,20 @@ export default function NewContractPage() {
 
         {form.contract_type === 'facultative' && (
           <Card>
-            <CardHeader><CardTitle>수재사 지정</CardTitle></CardHeader>
+            <CardHeader>
+              <CardTitle>수재사 지정</CardTitle>
+            </CardHeader>
             <CardContent>
               <div className="space-y-1.5 max-w-xs">
                 <Select value={facultativeReinsurer} onValueChange={setFacultativeReinsurer}>
-                  <SelectTrigger><SelectValue placeholder="수재사 선택" /></SelectTrigger>
+                  <SelectTrigger>
+                    <SelectValue placeholder="수재사 선택" />
+                  </SelectTrigger>
                   <SelectContent>
                     {reinsurers.map((r) => (
-                      <SelectItem key={r.id} value={r.id}>{r.company_name_ko}</SelectItem>
+                      <SelectItem key={r.id} value={r.id}>
+                        {r.company_name_ko}
+                      </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
@@ -149,9 +178,15 @@ export default function NewContractPage() {
           onOffsetChange={(v) => setForm((p) => ({ ...p, offset_allowed: v }))}
         />
 
+        <AttachmentSection entityType="contract" onStagedFilesChange={setStagedFiles} />
+
         <div className="flex justify-end gap-2">
-          <Button type="button" variant="default" onClick={() => router.back()}>취소</Button>
-          <Button type="submit" disabled={loading}>{loading ? '저장 중...' : '계약 등록'}</Button>
+          <Button type="button" variant="default" onClick={() => router.back()}>
+            취소
+          </Button>
+          <Button type="submit" disabled={loading}>
+            {loading ? '저장 중...' : '계약 등록'}
+          </Button>
         </div>
       </form>
     </div>

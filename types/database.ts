@@ -714,6 +714,43 @@ export interface ShareTokenLogInsert {
 }
 
 // ─────────────────────────────────────────────
+// rs_attachments — 별첨(첨부파일)
+// ─────────────────────────────────────────────
+
+export type AttachmentEntityType =
+  | 'contract'
+  | 'transaction'
+  | 'settlement'
+  | 'account_current'
+  | 'bordereau'
+
+export interface AttachmentRow {
+  id: string
+  entity_type: AttachmentEntityType
+  entity_id: string
+  file_name: string
+  file_path: string
+  file_size: number | null
+  mime_type: string | null
+  note: string | null
+  uploaded_by: string | null
+  created_at: string
+}
+
+export interface AttachmentInsert {
+  id?: string
+  entity_type: AttachmentEntityType
+  entity_id: string
+  file_name: string
+  file_path: string
+  file_size?: number | null
+  mime_type?: string | null
+  note?: string | null
+  uploaded_by?: string | null
+  created_at?: string
+}
+
+// ─────────────────────────────────────────────
 // Database 타입 맵 (Supabase 클라이언트용)
 // ─────────────────────────────────────────────
 
@@ -814,6 +851,12 @@ export interface Database {
         Row: LossBordereauRow
         Insert: LossBordereauInsert
         Update: LossBordereauUpdate
+        Relationships: []
+      }
+      rs_attachments: {
+        Row: AttachmentRow
+        Insert: AttachmentInsert
+        Update: Partial<AttachmentInsert>
         Relationships: []
       }
     }

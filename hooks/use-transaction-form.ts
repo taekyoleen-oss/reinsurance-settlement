@@ -29,7 +29,11 @@ const INITIAL_FORM = {
   allocation_type: 'auto',
 }
 
-export function useTransactionForm(initialContractId?: string, initialCounterpartyId?: string) {
+export function useTransactionForm(
+  initialContractId?: string,
+  initialCounterpartyId?: string,
+  onCreated?: (id: string) => Promise<void>
+) {
   const router = useRouter()
   const allContracts = useContracts()
   const counterparties = useCounterparties()
@@ -60,18 +64,29 @@ export function useTransactionForm(initialContractId?: string, initialCounterpar
     if (!initialCounterpartyId || counterparties.length === 0) return
     if (!counterparties.some((c) => c.id === initialCounterpartyId)) return
     setForm((p) =>
-      p.counterparty_id === initialCounterpartyId ? p : { ...p, counterparty_id: initialCounterpartyId }
+      p.counterparty_id === initialCounterpartyId
+        ? p
+        : { ...p, counterparty_id: initialCounterpartyId }
     )
   }, [initialCounterpartyId, counterparties])
 
   useEffect(() => {
     const c = contracts.find((x) => x.id === form.contract_id)
     if (!c?.settlement_currency) return
-    setForm((p) => (p.currency === c.settlement_currency ? p : { ...p, currency: c.settlement_currency }))
+    setForm((p) =>
+      p.currency === c.settlement_currency ? p : { ...p, currency: c.settlement_currency }
+    )
   }, [form.contract_id, contracts])
 
   useEffect(() => {
-    if (!isTreaty || isNonProp || !form.contract_id || !form.amount || parseFloat(form.amount) <= 0 || form.allocation_type !== 'auto') {
+    if (
+      !isTreaty ||
+      isNonProp ||
+      !form.contract_id ||
+      !form.amount ||
+      parseFloat(form.amount) <= 0 ||
+      form.allocation_type !== 'auto'
+    ) {
       setAllocations([])
       return
     }
@@ -99,7 +114,15 @@ export function useTransactionForm(initialContractId?: string, initialCounterpar
     }, 500)
 
     return () => clearTimeout(timeout)
-  }, [form.contract_id, form.amount, form.currency, form.allocation_type, isTreaty, isNonProp, form.transaction_date])
+  }, [
+    form.contract_id,
+    form.amount,
+    form.currency,
+    form.allocation_type,
+    isTreaty,
+    isNonProp,
+    form.transaction_date,
+  ])
 
   const set = (key: string) => (value: string) => setForm((p) => ({ ...p, [key]: value }))
 
@@ -115,7 +138,11 @@ export function useTransactionForm(initialContractId?: string, initialCounterpar
       const res = await fetch('/api/transactions', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ...form, amount_original: parseFloat(form.amount), allocation_type: isNonProp ? 'manual' : form.allocation_type }),
+        body: JSON.stringify({
+          ...form,
+          amount_original: parseFloat(form.amount),
+          allocation_type: isNonProp ? 'manual' : form.allocation_type,
+        }),
       })
 
       if (res.status === 422) {
@@ -129,7 +156,11 @@ export function useTransactionForm(initialContractId?: string, initialCounterpar
         return
       }
 
+      const created = await res.json()
       toast.success('거래가 등록되었습니다.')
+      if (onCreated && created?.data?.id) {
+        await onCreated(created.data.id)
+      }
       router.push('/transactions')
     } catch {
       toast.error('서버 오류가 발생했습니다.')

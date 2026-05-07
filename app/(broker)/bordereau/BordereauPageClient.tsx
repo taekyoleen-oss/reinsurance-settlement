@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback, useMemo } from 'react'
 import Link from 'next/link'
-import { useSearchParams } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { Plus, Upload, RefreshCw } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
@@ -20,6 +20,7 @@ import { useContracts } from '@/hooks/use-reference-data'
 import type { PremiumBordereauRow, LossBordereauRow } from '@/types/database'
 
 export function BordereauPageClient() {
+  const router = useRouter()
   const searchParams = useSearchParams()
   const [activeTab, setActiveTab] = useState<'premium' | 'loss'>('premium')
   const [premiumRows, setPremiumRows] = useState<PremiumBordereauRow[]>([])
@@ -144,7 +145,9 @@ export function BordereauPageClient() {
           </Select>
         </div>
         <div className="flex flex-col gap-1.5">
-          <Label className="text-[10px] font-medium uppercase text-[var(--text-muted)]">회계기간</Label>
+          <Label className="text-[10px] font-medium uppercase text-[var(--text-muted)]">
+            회계기간
+          </Label>
           <input
             type="text"
             value={period}
@@ -195,7 +198,10 @@ export function BordereauPageClient() {
               불러오는 중...
             </div>
           ) : (
-            <PremiumBordereauTable rows={premiumRows} />
+            <PremiumBordereauTable
+              rows={premiumRows}
+              onSelect={(row) => router.push(`/bordereau/premium/${row.id}`)}
+            />
           )}
         </TabsContent>
 
@@ -206,7 +212,10 @@ export function BordereauPageClient() {
               불러오는 중...
             </div>
           ) : (
-            <LossBordereauTable rows={lossRows} />
+            <LossBordereauTable
+              rows={lossRows}
+              onSelect={(row) => router.push(`/bordereau/loss/${row.id}`)}
+            />
           )}
         </TabsContent>
       </Tabs>

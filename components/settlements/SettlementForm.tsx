@@ -5,8 +5,15 @@ import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { AttachmentSection, uploadStagedFiles } from '@/components/shared/AttachmentSection'
 import type { CounterpartyRow, CurrencyRow } from '@/types'
 
 const INITIAL_FORM = {
@@ -29,6 +36,7 @@ interface Props {
 export function SettlementForm({ counterparties, currencies, onSuccess, onCancel }: Props) {
   const [form, setForm] = useState(INITIAL_FORM)
   const [loading, setLoading] = useState(false)
+  const [stagedFiles, setStagedFiles] = useState<File[]>([])
 
   const set = <K extends keyof typeof INITIAL_FORM>(key: K, value: (typeof INITIAL_FORM)[K]) =>
     setForm((f) => ({ ...f, [key]: value }))
@@ -45,23 +53,31 @@ export function SettlementForm({ counterparties, currencies, onSuccess, onCancel
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          settlement_type:  form.settlement_type,
-          counterparty_id:  form.counterparty_id,
-          amount:           parseFloat(form.amount),
-          currency_code:    form.currency_code.trim().toUpperCase(),
-          settlement_date:  form.settlement_date,
-          reference_no:     form.reference_no.trim() || undefined,
-          notes:            form.notes.trim() || undefined,
+          settlement_type: form.settlement_type,
+          counterparty_id: form.counterparty_id,
+          amount: parseFloat(form.amount),
+          currency_code: form.currency_code.trim().toUpperCase(),
+          settlement_date: form.settlement_date,
+          reference_no: form.reference_no.trim() || undefined,
+          notes: form.notes.trim() || undefined,
         }),
       })
       const data = await res.json()
       if (res.status === 422) throw new Error(data.error ?? '환율을 먼저 등록하세요.')
       if (!res.ok) throw new Error(data.error ?? '등록 실패')
       toast.success('결제가 등록되었습니다.')
+      if (stagedFiles.length > 0 && data?.data?.id) {
+        try {
+          await uploadStagedFiles('settlement', data.data.id, stagedFiles)
+        } catch (err: unknown) {
+          toast.error(`첨부 업로드 실패: ${err instanceof Error ? err.message : String(err)}`)
+        }
+      }
       setForm(INITIAL_FORM)
+      setStagedFiles([])
       onSuccess()
-    } catch (err: any) {
-      toast.error(err.message)
+    } catch (err: unknown) {
+      toast.error(err instanceof Error ? err.message : String(err))
     } finally {
       setLoading(false)
     }
@@ -77,10 +93,14 @@ export function SettlementForm({ counterparties, currencies, onSuccess, onCancel
           <div className="space-y-1.5">
             <Label>거래상대방 *</Label>
             <Select value={form.counterparty_id} onValueChange={(v) => set('counterparty_id', v)}>
-              <SelectTrigger><SelectValue placeholder="선택..." /></SelectTrigger>
+              <SelectTrigger>
+                <SelectValue placeholder="선택..." />
+              </SelectTrigger>
               <SelectContent>
                 {counterparties.map((cp) => (
-                  <SelectItem key={cp.id} value={cp.id}>{cp.company_name_ko}</SelectItem>
+                  <SelectItem key={cp.id} value={cp.id}>
+                    {cp.company_name_ko}
+                  </SelectItem>
                 ))}
               </SelectContent>
             </Select>
@@ -91,7 +111,9 @@ export function SettlementForm({ counterparties, currencies, onSuccess, onCancel
               value={form.settlement_type}
               onValueChange={(v) => set('settlement_type', v as 'receipt' | 'payment')}
             >
-              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
               <SelectContent>
                 <SelectItem value="receipt">수취(입금)</SelectItem>
                 <SelectItem value="payment">지급(출금)</SelectItem>
@@ -112,10 +134,14 @@ export function SettlementForm({ counterparties, currencies, onSuccess, onCancel
             <Label>통화</Label>
             {currencies.length > 0 ? (
               <Select value={form.currency_code} onValueChange={(v) => set('currency_code', v)}>
-                <SelectTrigger className="w-28 font-mono"><SelectValue placeholder="통화" /></SelectTrigger>
+                <SelectTrigger className="w-28 font-mono">
+                  <SelectValue placeholder="통화" />
+                </SelectTrigger>
                 <SelectContent>
                   {currencies.map((c) => (
-                    <SelectItem key={c.code} value={c.code}>{c.code} · {c.name_ko}</SelectItem>
+                    <SelectItem key={c.code} value={c.code}>
+                      {c.code} · {c.name_ko}
+                    </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
@@ -149,9 +175,16 @@ export function SettlementForm({ counterparties, currencies, onSuccess, onCancel
             <Label>비고</Label>
             <Input value={form.notes} onChange={(e) => set('notes', e.target.value)} />
           </div>
+          <div className="col-span-2">
+            <AttachmentSection entityType="settlement" onStagedFilesChange={setStagedFiles} />
+          </div>
           <div className="col-span-2 flex gap-2">
-            <Button type="submit" disabled={loading}>{loading ? '등록 중...' : '등록'}</Button>
-            <Button type="button" variant="ghost" onClick={onCancel}>취소</Button>
+            <Button type="submit" disabled={loading}>
+              {loading ? '등록 중...' : '등록'}
+            </Button>
+            <Button type="button" variant="ghost" onClick={onCancel}>
+              취소
+            </Button>
           </div>
         </form>
       </CardContent>

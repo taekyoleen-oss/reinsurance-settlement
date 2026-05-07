@@ -1,30 +1,25 @@
 'use client'
 
-import { useState, useEffect, useMemo } from 'react'
-import { useRouter } from 'next/navigation'
+import { useState, useEffect } from 'react'
+import { useParams, useRouter } from 'next/navigation'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
-import { CedantFilterSelect } from '@/components/contracts/CedantFilterSelect'
 import { FieldHelp } from '@/components/shared/FieldHelp'
-import { AttachmentSection, uploadStagedFiles } from '@/components/shared/AttachmentSection'
-import { ArrowLeft, Save, Calculator } from 'lucide-react'
+import { AttachmentSection } from '@/components/shared/AttachmentSection'
+import { ArrowLeft, Save, Calculator, Trash2 } from 'lucide-react'
 import Link from 'next/link'
-import { useContracts } from '@/hooks/use-reference-data'
+import type { PremiumBordereauRow } from '@/types/database'
 
-export default function PremiumBordereauNewPage() {
+export default function PremiumBordereauEditPage() {
+  const { id } = useParams<{ id: string }>()
   const router = useRouter()
-  const allContracts = useContracts()
-  const [filterCedantId, setFilterCedantId] = useState('')
-  const contracts = useMemo(
-    () => allContracts.filter((c) => !filterCedantId || c.cedant_id === filterCedantId),
-    [allContracts, filterCedantId]
-  )
+  const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
+  const [deleting, setDeleting] = useState(false)
   const [error, setError] = useState('')
-  const [stagedFiles, setStagedFiles] = useState<File[]>([])
+  const [original, setOriginal] = useState<PremiumBordereauRow | null>(null)
 
   const [form, setForm] = useState({
-    contract_id: '',
     period_yyyyqn: '',
     policy_no: '',
     insured_name: '',
@@ -36,20 +31,34 @@ export default function PremiumBordereauNewPage() {
     ceded_premium: '',
     entry_type: 'new',
     currency: 'KRW',
+    validation_status: 'pending',
   })
 
+  // 기존 데이터 로드
   useEffect(() => {
-    if (!form.contract_id || contracts.length === 0) return
-    if (!contracts.some((c) => c.id === form.contract_id)) {
-      setForm((f) => ({ ...f, contract_id: '' }))
-    }
-  }, [contracts, form.contract_id])
-
-  useEffect(() => {
-    if (typeof window === 'undefined') return
-    const id = new URLSearchParams(window.location.search).get('contractId')
-    if (id) setForm((f) => ({ ...f, contract_id: id }))
-  }, [])
+    fetch(`/api/bordereau/premium/${id}`)
+      .then((r) => r.json())
+      .then((d) => {
+        const row: PremiumBordereauRow = d.data ?? d
+        setOriginal(row)
+        setForm({
+          period_yyyyqn: row.period_yyyyqn,
+          policy_no: row.policy_no,
+          insured_name: row.insured_name ?? '',
+          risk_period_from: row.risk_period_from,
+          risk_period_to: row.risk_period_to,
+          sum_insured: String(row.sum_insured),
+          original_premium: String(row.original_premium),
+          cession_pct: String((row.cession_pct * 100).toFixed(4)),
+          ceded_premium: String(row.ceded_premium),
+          entry_type: row.entry_type,
+          currency: row.currency,
+          validation_status: row.validation_status,
+        })
+      })
+      .catch(() => setError('명세를 불러올 수 없습니다.'))
+      .finally(() => setLoading(false))
+  }, [id])
 
   // 출재보험료 자동계산
   useEffect(() => {
@@ -61,15 +70,13 @@ export default function PremiumBordereauNewPage() {
     }
   }, [form.original_premium, form.cession_pct])
 
-  // 계약 선택 시 통화 자동 설정
-  useEffect(() => {
-    const c = contracts.find((c) => c.id === form.contract_id)
-    if (c) setForm((f) => ({ ...f, currency: c.settlement_currency }))
-  }, [form.contract_id, contracts])
-
   const set =
     (k: keyof typeof form) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) =>
       setForm((f) => ({ ...f, [k]: e.target.value }))
+
+  const backHref = original?.contract_id
+    ? `/bordereau?contractId=${encodeURIComponent(original.contract_id)}`
+    : '/bordereau'
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -78,34 +85,30 @@ export default function PremiumBordereauNewPage() {
     try {
       const pct = parseFloat(form.cession_pct)
       const payload = {
-        ...form,
+        period_yyyyqn: form.period_yyyyqn,
+        policy_no: form.policy_no,
+        insured_name: form.insured_name || null,
+        risk_period_from: form.risk_period_from,
+        risk_period_to: form.risk_period_to,
         sum_insured: parseFloat(form.sum_insured),
         original_premium: parseFloat(form.original_premium),
         cession_pct: pct > 1 ? pct / 100 : pct,
         ceded_premium: parseFloat(form.ceded_premium),
+        entry_type: form.entry_type,
+        currency: form.currency,
+        validation_status: form.validation_status,
       }
-      const res = await fetch('/api/bordereau/premium', {
-        method: 'POST',
+      const res = await fetch(`/api/bordereau/premium/${id}`, {
+        method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
       })
       if (!res.ok) {
         const j = await res.json()
-        throw new Error(j.error ?? '저장 실패')
+        throw new Error(j.error ?? '수정 실패')
       }
-      const created = await res.json()
-      if (stagedFiles.length > 0 && created?.data?.id) {
-        try {
-          await uploadStagedFiles('bordereau', created.data.id, stagedFiles)
-        } catch (err: unknown) {
-          toast.error(`첨부 업로드 실패: ${err instanceof Error ? err.message : String(err)}`)
-        }
-      }
-      const back =
-        form.contract_id !== ''
-          ? `/bordereau?contractId=${encodeURIComponent(form.contract_id)}`
-          : '/bordereau'
-      router.push(back)
+      toast.success('보험료 명세가 수정되었습니다.')
+      router.push(backHref)
     } catch (err) {
       setError(err instanceof Error ? err.message : String(err))
     } finally {
@@ -113,29 +116,69 @@ export default function PremiumBordereauNewPage() {
     }
   }
 
+  const handleDelete = async () => {
+    if (!confirm('이 명세를 삭제하시겠습니까?')) return
+    setDeleting(true)
+    try {
+      const res = await fetch(`/api/bordereau/premium/${id}`, { method: 'DELETE' })
+      if (!res.ok) {
+        const j = await res.json()
+        throw new Error(j.error ?? '삭제 실패')
+      }
+      toast.success('보험료 명세가 삭제되었습니다.')
+      router.push(backHref)
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : String(err))
+    } finally {
+      setDeleting(false)
+    }
+  }
+
   const inputCls =
     'w-full rounded border border-border bg-background px-3 py-2 text-sm text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-primary'
   const labelCls = 'flex items-center gap-1 text-xs font-medium text-[var(--text-secondary)]'
-  const bordereauListHref =
-    form.contract_id !== ''
-      ? `/bordereau?contractId=${encodeURIComponent(form.contract_id)}`
-      : '/bordereau'
+
+  if (loading) {
+    return (
+      <div className="p-8 text-center text-sm text-[var(--text-muted)] animate-pulse">
+        불러오는 중...
+      </div>
+    )
+  }
+
+  if (!original && !loading) {
+    return (
+      <div className="p-8 text-center text-sm text-destructive">
+        {error || '명세를 찾을 수 없습니다.'}
+      </div>
+    )
+  }
 
   return (
     <div className="mx-auto max-w-2xl space-y-6">
       {/* 헤더 */}
-      <div className="flex items-center gap-3">
-        <Button variant="ghost" size="icon" className="h-8 w-8" asChild>
-          <Link href={bordereauListHref}>
-            <ArrowLeft className="h-4 w-4" />
-          </Link>
-        </Button>
-        <div>
-          <h1 className="text-lg font-bold text-[var(--text-primary)]">보험료 명세 추가</h1>
-          <p className="text-xs text-[var(--text-muted)]">
-            2단계 — 원수계약 증권 단위 출재 보험료를 입력합니다
-          </p>
+      <div className="flex items-center justify-between gap-3">
+        <div className="flex items-center gap-3">
+          <Button variant="ghost" size="icon" className="h-8 w-8" asChild>
+            <Link href={backHref}>
+              <ArrowLeft className="h-4 w-4" />
+            </Link>
+          </Button>
+          <div>
+            <h1 className="text-lg font-bold text-[var(--text-primary)]">보험료 명세 수정</h1>
+            <p className="text-xs text-[var(--text-muted)] font-mono">{original?.policy_no}</p>
+          </div>
         </div>
+        <Button
+          type="button"
+          variant="destructive"
+          size="sm"
+          onClick={handleDelete}
+          disabled={deleting}
+        >
+          <Trash2 className="mr-1.5 h-3.5 w-3.5" />
+          {deleting ? '삭제 중...' : '삭제'}
+        </Button>
       </div>
 
       {error && (
@@ -144,47 +187,21 @@ export default function PremiumBordereauNewPage() {
         </div>
       )}
 
+      {/* 계약 정보 (읽기 전용) */}
+      <div className="rounded-lg border border-border bg-surface-elevated p-4">
+        <p className="text-xs font-medium text-[var(--text-muted)] mb-1">계약 ID (변경 불가)</p>
+        <p className="text-sm font-mono text-[var(--text-primary)]">{original?.contract_id}</p>
+      </div>
+
       <form onSubmit={handleSubmit} className="space-y-5">
         {/* 계약 및 기간 */}
         <div className="rounded-lg border border-border p-4 space-y-4">
           <p className="text-sm font-semibold text-[var(--text-primary)]">계약 및 회계기간</p>
           <div className="grid grid-cols-2 gap-4">
-            <div className="col-span-2 flex flex-wrap items-end gap-4">
-              <CedantFilterSelect
-                value={filterCedantId}
-                onChange={setFilterCedantId}
-                triggerClassName="h-9 w-[min(100%,14rem)]"
-              />
-              <p className="pb-2 text-[11px] text-[var(--text-muted)]">
-                출재사를 먼저 좁히면 계약 목록에서 찾기 쉽습니다.
-              </p>
-            </div>
-            <div className="col-span-2 space-y-1">
-              <label className={labelCls}>
-                계약
-                <FieldHelp text="이 명세가 속한 재보험 계약을 선택합니다. 계약의 통화와 조건이 자동으로 적용됩니다." />
-                <span className="text-destructive">*</span>
-              </label>
-              <select
-                required
-                value={form.contract_id}
-                onChange={set('contract_id')}
-                className={inputCls}
-              >
-                <option value="">계약을 선택하세요</option>
-                {contracts.map((c) => (
-                  <option key={c.id} value={c.id}>
-                    {c.contract_no}
-                    {' — '}
-                    {c.cedant?.company_name_ko ?? c.description ?? c.contract_type}
-                  </option>
-                ))}
-              </select>
-            </div>
             <div className="space-y-1">
               <label className={labelCls}>
                 회계기간
-                <FieldHelp text="해당 명세의 회계기간입니다. 예: 2026Q1(분기), 2026S1(반기), 2026A(연간)" />
+                <FieldHelp text="예: 2026Q1(분기), 2026S1(반기), 2026A(연간)" />
                 <span className="text-destructive">*</span>
               </label>
               <input
@@ -222,7 +239,7 @@ export default function PremiumBordereauNewPage() {
             <div className="space-y-1">
               <label className={labelCls}>
                 증권번호
-                <FieldHelp text="원수보험계약의 증권번호. 손해 명세와 연결 시 사용됩니다." />
+                <FieldHelp text="원수보험계약의 증권번호" />
                 <span className="text-destructive">*</span>
               </label>
               <input
@@ -290,7 +307,6 @@ export default function PremiumBordereauNewPage() {
             <div className="space-y-1">
               <label className={labelCls}>
                 보험가입금액
-                <FieldHelp text="원수계약의 총 보험가입금액(Sum Insured)입니다." />
                 <span className="text-destructive">*</span>
               </label>
               <input
@@ -307,7 +323,6 @@ export default function PremiumBordereauNewPage() {
             <div className="space-y-1">
               <label className={labelCls}>
                 원보험료
-                <FieldHelp text="재보험 출재 전 원수보험료 전액입니다." />
                 <span className="text-destructive">*</span>
               </label>
               <input
@@ -324,7 +339,7 @@ export default function PremiumBordereauNewPage() {
             <div className="space-y-1">
               <label className={labelCls}>
                 출재비율(%)
-                <FieldHelp text="Quota Share는 계약 고정율, Surplus는 위험별 산정. 30%는 30 또는 0.30 모두 입력 가능합니다." />
+                <FieldHelp text="30%는 30 또는 0.30 모두 입력 가능합니다." />
                 <span className="text-destructive">*</span>
               </label>
               <input
@@ -351,42 +366,42 @@ export default function PremiumBordereauNewPage() {
                 type="number"
                 min="0"
                 step="0.01"
-                placeholder="0"
                 value={form.ceded_premium}
                 onChange={set('ceded_premium')}
                 className={`${inputCls} font-mono text-right`}
               />
-              {form.original_premium && form.cession_pct && (
-                <p className="text-[10px] text-[var(--text-muted)]">
-                  자동계산: {parseFloat(form.original_premium).toLocaleString()} ×{' '}
-                  {parseFloat(form.cession_pct) > 1
-                    ? parseFloat(form.cession_pct) / 100
-                    : parseFloat(form.cession_pct)}{' '}
-                  ={' '}
-                  {Math.round(
-                    parseFloat(form.original_premium) *
-                      (parseFloat(form.cession_pct) > 1
-                        ? parseFloat(form.cession_pct) / 100
-                        : parseFloat(form.cession_pct))
-                  ).toLocaleString()}
-                </p>
-              )}
             </div>
           </div>
         </div>
 
-        <AttachmentSection entityType="bordereau" onStagedFilesChange={setStagedFiles} />
+        {/* 검증 상태 */}
+        <div className="rounded-lg border border-border p-4 space-y-3">
+          <p className="text-sm font-semibold text-[var(--text-primary)]">검증 상태</p>
+          <select
+            value={form.validation_status}
+            onChange={set('validation_status')}
+            className={`${inputCls} max-w-xs`}
+          >
+            <option value="pending">미검증</option>
+            <option value="valid">정상</option>
+            <option value="warning">경고</option>
+            <option value="error">오류</option>
+          </select>
+        </div>
 
         <div className="flex justify-end gap-3">
           <Button type="button" variant="outline" asChild>
-            <Link href={bordereauListHref}>취소</Link>
+            <Link href={backHref}>취소</Link>
           </Button>
           <Button type="submit" disabled={saving}>
             <Save className="mr-1.5 h-4 w-4" />
-            {saving ? '저장 중...' : '저장'}
+            {saving ? '저장 중...' : '수정 저장'}
           </Button>
         </div>
       </form>
+
+      {/* 별첨 — entity_id가 있으므로 live 모드 */}
+      <AttachmentSection entityType="bordereau" entityId={id} />
     </div>
   )
 }

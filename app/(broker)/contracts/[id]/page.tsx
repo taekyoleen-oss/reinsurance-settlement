@@ -16,6 +16,7 @@ import {
 } from '@/components/ui/table'
 import { ArrowLeft, ClipboardList, FileText, Layers, Plus } from 'lucide-react'
 import Link from 'next/link'
+import { AttachmentSection } from '@/components/shared/AttachmentSection'
 import type { ContractWithCedantRow } from '@/types'
 
 interface ShareRow {
@@ -180,6 +181,8 @@ export default function ContractDetailPage() {
           </CardContent>
         </Card>
       </div>
+
+      <AttachmentSection entityType="contract" entityId={id} />
 
       {contract.contract_type === 'treaty' && (
         <Card>
