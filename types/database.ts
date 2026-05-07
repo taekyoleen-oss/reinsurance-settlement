@@ -8,6 +8,7 @@
 export type UserRole =
   | 'broker_technician'
   | 'broker_manager'
+  | 'reviewer'
   | 'cedant_viewer'
   | 'reinsurer_viewer'
   | 'admin'
@@ -16,6 +17,7 @@ export type ACStatus =
   | 'draft'
   | 'pending_approval'
   | 'approved'
+  | 'reviewed'
   | 'issued'
   | 'acknowledged'
   | 'disputed'
@@ -168,6 +170,11 @@ export interface ContractRow {
   confirmation_due_days: number | null
   offset_allowed: boolean
   cash_loss_threshold: number | null
+  // v1.5 항목별 정산주기 (마이그레이션 후 non-null)
+  premium_settlement_period: PeriodType | null
+  loss_settlement_period: PeriodType | null
+  commission_settlement_period: PeriodType | null
+  verifier_user_id: string | null
   created_by: string
   created_at: string
   updated_at: string
@@ -206,6 +213,10 @@ export interface ContractInsert {
   confirmation_due_days?: number | null
   offset_allowed?: boolean
   cash_loss_threshold?: number | null
+  premium_settlement_period?: PeriodType
+  loss_settlement_period?: PeriodType
+  commission_settlement_period?: PeriodType
+  verifier_user_id?: string | null
   created_by: string
   created_at?: string
   updated_at?: string
@@ -236,6 +247,10 @@ export interface ContractUpdate {
   confirmation_due_days?: number | null
   offset_allowed?: boolean
   cash_loss_threshold?: number | null
+  premium_settlement_period?: PeriodType
+  loss_settlement_period?: PeriodType
+  commission_settlement_period?: PeriodType
+  verifier_user_id?: string | null
   updated_at?: string
 }
 
@@ -367,6 +382,18 @@ export interface TransactionRow {
   is_locked: boolean
   is_deleted: boolean
   is_allocation_parent: boolean
+  // v1.5 confirm/verify meta (마이그레이션 후 사용)
+  review_status?: 'unconfirmed' | 'confirmed' | 'verified' | 'rejected'
+  contract_match_status?: 'pending' | 'matched' | 'mismatch' | 'waived'
+  confirmed_by?: string | null
+  confirmed_at?: string | null
+  confirmer_name?: string | null
+  confirmer_email?: string | null
+  verified_by?: string | null
+  verified_at?: string | null
+  verifier_name?: string | null
+  verifier_email?: string | null
+  review_notes?: string | null
   created_by: string
   updated_by: string | null
   created_at: string
@@ -424,6 +451,18 @@ export interface TransactionUpdate {
   is_deleted?: boolean
   updated_by?: string | null
   updated_at?: string
+  // v1.5 confirm/verify meta
+  review_status?: 'unconfirmed' | 'confirmed' | 'verified' | 'rejected'
+  contract_match_status?: 'pending' | 'matched' | 'mismatch' | 'waived'
+  confirmed_by?: string | null
+  confirmed_at?: string | null
+  confirmer_name?: string | null
+  confirmer_email?: string | null
+  verified_by?: string | null
+  verified_at?: string | null
+  verifier_name?: string | null
+  verifier_email?: string | null
+  review_notes?: string | null
 }
 
 // ─────────────────────────────────────────────
@@ -452,6 +491,14 @@ export interface AccountCurrentRow {
   issued_at: string | null
   due_date: string | null
   notes: string | null
+  // v1.5 reviewer meta (마이그레이션 후 사용)
+  reviewed_by?: string | null
+  reviewed_at?: string | null
+  reviewer_name?: string | null
+  reviewer_email?: string | null
+  issued_by?: string | null
+  acknowledged_by?: string | null
+  acknowledged_at?: string | null
   created_by: string
   created_at: string
   updated_at: string
@@ -498,6 +545,13 @@ export interface AccountCurrentUpdate {
   issued_at?: string | null
   due_date?: string | null
   notes?: string | null
+  reviewed_by?: string | null
+  reviewed_at?: string | null
+  reviewer_name?: string | null
+  reviewer_email?: string | null
+  issued_by?: string | null
+  acknowledged_by?: string | null
+  acknowledged_at?: string | null
   updated_at?: string
 }
 
@@ -549,6 +603,16 @@ export interface SettlementRow {
   match_status: MatchStatus
   matched_amount: number
   notes: string | null
+  // v1.5 remit meta (마이그레이션 후 사용)
+  remit_status?: 'pending' | 'remitted' | 'verified' | 'failed'
+  remitted_by?: string | null
+  remitted_at?: string | null
+  remitter_name?: string | null
+  remitter_email?: string | null
+  reviewed_by?: string | null
+  reviewed_at?: string | null
+  reviewer_name?: string | null
+  reviewer_email?: string | null
   created_by: string
   created_at: string
 }
@@ -582,6 +646,15 @@ export interface SettlementUpdate {
   match_status?: MatchStatus
   matched_amount?: number
   notes?: string | null
+  remit_status?: 'pending' | 'remitted' | 'verified' | 'failed'
+  remitted_by?: string | null
+  remitted_at?: string | null
+  remitter_name?: string | null
+  remitter_email?: string | null
+  reviewed_by?: string | null
+  reviewed_at?: string | null
+  reviewer_name?: string | null
+  reviewer_email?: string | null
 }
 
 // ─────────────────────────────────────────────
@@ -591,9 +664,11 @@ export interface SettlementUpdate {
 export interface SettlementMatchRow {
   id: string
   settlement_id: string
-  ac_id: string
+  account_current_id: string
   tx_id: string | null
   matched_amount: number
+  matched_by: string | null
+  matched_at: string | null
   created_by: string
   created_at: string
 }
@@ -601,9 +676,11 @@ export interface SettlementMatchRow {
 export interface SettlementMatchInsert {
   id?: string
   settlement_id: string
-  ac_id: string
+  account_current_id: string
   tx_id?: string | null
   matched_amount: number
+  matched_by?: string | null
+  matched_at?: string | null
   created_by: string
   created_at?: string
 }
@@ -859,6 +936,24 @@ export interface Database {
         Update: Partial<AttachmentInsert>
         Relationships: []
       }
+      rs_contract_settlement_schedules: {
+        Row: ContractSettlementScheduleRow
+        Insert: ContractSettlementScheduleInsert
+        Update: ContractSettlementScheduleUpdate
+        Relationships: []
+      }
+      rs_loss_claims: {
+        Row: LossClaimRow
+        Insert: LossClaimInsert
+        Update: LossClaimUpdate
+        Relationships: []
+      }
+      rs_loss_claim_transactions: {
+        Row: LossClaimTransactionRow
+        Insert: LossClaimTransactionInsert
+        Update: Partial<LossClaimTransactionInsert>
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
@@ -896,6 +991,18 @@ export interface PremiumBordereauRow {
   currency: string
   validation_status: ValidationStatus
   validation_messages: Record<string, unknown>[] | null
+  // v1.5 (마이그레이션 후 사용)
+  settlement_schedule_id?: string | null
+  review_status?: 'unconfirmed' | 'confirmed' | 'verified' | 'rejected'
+  confirmed_by?: string | null
+  confirmed_at?: string | null
+  confirmer_name?: string | null
+  confirmer_email?: string | null
+  verified_by?: string | null
+  verified_at?: string | null
+  verifier_name?: string | null
+  verifier_email?: string | null
+  review_notes?: string | null
   created_by: string | null
   created_at: string
   updated_at: string
@@ -963,6 +1070,18 @@ export interface LossBordereauRow {
   currency: string
   validation_status: ValidationStatus
   validation_messages: Record<string, unknown>[] | null
+  // v1.5
+  settlement_schedule_id: string | null
+  review_status: 'unconfirmed' | 'confirmed' | 'verified' | 'rejected'
+  confirmed_by: string | null
+  confirmed_at: string | null
+  confirmer_name: string | null
+  confirmer_email: string | null
+  verified_by: string | null
+  verified_at: string | null
+  verifier_name: string | null
+  verifier_email: string | null
+  review_notes: string | null
   created_by: string | null
   created_at: string
   updated_at: string
@@ -1008,4 +1127,147 @@ export interface LossBordereauUpdate {
   validation_status?: ValidationStatus
   validation_messages?: Record<string, unknown>[] | null
   updated_at?: string
+  // v1.5 confirm/verify meta
+  settlement_schedule_id?: string | null
+  review_status?: 'unconfirmed' | 'confirmed' | 'verified' | 'rejected'
+  confirmed_by?: string | null
+  confirmed_at?: string | null
+  confirmer_name?: string | null
+  confirmer_email?: string | null
+  verified_by?: string | null
+  verified_at?: string | null
+  verifier_name?: string | null
+  verifier_email?: string | null
+  review_notes?: string | null
+}
+
+// ─────────────────────────────────────────────
+// rs_contract_settlement_schedules — 정산주기 인스턴스 (v1.5)
+// ─────────────────────────────────────────────
+
+export type ScheduleType = 'premium' | 'loss' | 'commission'
+export type ScheduleStatus = 'open' | 'in_progress' | 'closed' | 'cancelled'
+
+export interface ContractSettlementScheduleRow {
+  id: string
+  contract_id: string
+  schedule_type: ScheduleType
+  period_label: string
+  period_from: string
+  period_to: string
+  expected_amount: number | null
+  currency_code: string | null
+  status: ScheduleStatus
+  notes: string | null
+  created_by: string | null
+  created_at: string
+  updated_at: string
+}
+
+export interface ContractSettlementScheduleInsert {
+  id?: string
+  contract_id: string
+  schedule_type: ScheduleType
+  period_label: string
+  period_from: string
+  period_to: string
+  expected_amount?: number | null
+  currency_code?: string | null
+  status?: ScheduleStatus
+  notes?: string | null
+  created_by?: string | null
+  created_at?: string
+  updated_at?: string
+}
+
+export interface ContractSettlementScheduleUpdate {
+  expected_amount?: number | null
+  currency_code?: string | null
+  status?: ScheduleStatus
+  notes?: string | null
+  updated_at?: string
+}
+
+// ─────────────────────────────────────────────
+// rs_loss_claims — 보험금 청구 헤더 (v1.5)
+// ─────────────────────────────────────────────
+
+export type ClaimStatus =
+  | 'open'
+  | 'collecting'
+  | 'ready_to_pay'
+  | 'paying'
+  | 'closed'
+  | 'disputed'
+  | 'cancelled'
+
+export interface LossClaimRow {
+  id: string
+  claim_no: string
+  contract_id: string
+  cedant_id: string
+  loss_event_date: string
+  reported_date: string | null
+  loss_reference: string | null
+  total_claimed_amount: number
+  currency_code: string | null
+  status: ClaimStatus
+  description: string | null
+  collected_amount: number
+  paid_amount: number
+  created_by: string | null
+  created_at: string
+  updated_at: string
+}
+
+export interface LossClaimInsert {
+  id?: string
+  claim_no?: string
+  contract_id: string
+  cedant_id: string
+  loss_event_date: string
+  reported_date?: string | null
+  loss_reference?: string | null
+  total_claimed_amount: number
+  currency_code?: string | null
+  status?: ClaimStatus
+  description?: string | null
+  collected_amount?: number
+  paid_amount?: number
+  created_by?: string | null
+  created_at?: string
+  updated_at?: string
+}
+
+export interface LossClaimUpdate {
+  status?: ClaimStatus
+  description?: string | null
+  total_claimed_amount?: number
+  reported_date?: string | null
+  loss_reference?: string | null
+  updated_at?: string
+}
+
+// ─────────────────────────────────────────────
+// rs_loss_claim_transactions — claim ↔ transaction 매핑 (v1.5)
+// ─────────────────────────────────────────────
+
+export type ClaimTransactionRole =
+  | 'receipt_from_reinsurer'
+  | 'payment_to_cedant'
+  | 'recovery'
+  | 'adjustment'
+
+export interface LossClaimTransactionRow {
+  claim_id: string
+  transaction_id: string
+  role: ClaimTransactionRole
+  notes: string | null
+}
+
+export interface LossClaimTransactionInsert {
+  claim_id: string
+  transaction_id: string
+  role: ClaimTransactionRole
+  notes?: string | null
 }

@@ -22,6 +22,7 @@ import {
   LogOut,
   Menu,
   ClipboardList,
+  ShieldAlert,
 } from 'lucide-react'
 
 const NAV_ITEMS = [
@@ -31,6 +32,7 @@ const NAV_ITEMS = [
   { href: '/transactions', label: '거래 관리', icon: FileText, step: 2 },
   { href: '/account-currents', label: '정산서 관리', icon: Layers, step: 4 },
   { href: '/settlements', label: '결제 관리', icon: CreditCard, step: 6 },
+  { href: '/claims', label: '청구 관리', icon: ShieldAlert, step: 0 },
   { href: '/outstanding', label: '미청산 잔액', icon: AlertCircle, step: 7 },
   { href: '/reconciliation', label: '대사 관리', icon: GitMerge, step: 0 },
   { href: '/counterparties', label: '거래상대방', icon: Users, step: 0 },

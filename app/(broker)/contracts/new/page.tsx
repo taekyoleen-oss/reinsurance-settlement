@@ -32,6 +32,9 @@ const INITIAL_FORM = {
   expiry_date: '',
   settlement_currency: 'KRW',
   settlement_period: 'quarterly',
+  premium_settlement_period: 'quarterly',
+  loss_settlement_period: 'adhoc',
+  commission_settlement_period: 'quarterly',
   description: '',
   ceding_commission_rate: '',
   profit_commission_rate: '',
@@ -169,6 +172,35 @@ export default function NewContractPage() {
             </CardContent>
           </Card>
         )}
+
+        {/* 항목별 정산주기 */}
+        <Card>
+          <CardHeader>
+            <CardTitle>항목별 정산주기</CardTitle>
+          </CardHeader>
+          <CardContent className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            {[
+              { key: 'premium_settlement_period', label: '보험료 주기' },
+              { key: 'loss_settlement_period', label: '보험금 주기' },
+              { key: 'commission_settlement_period', label: '수수료 주기' },
+            ].map(({ key, label }) => (
+              <div key={key} className="space-y-1.5">
+                <label className="text-sm text-[var(--text-secondary)]">{label}</label>
+                <Select value={(form as Record<string, string>)[key]} onValueChange={set(key)}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="quarterly">분기</SelectItem>
+                    <SelectItem value="semiannual">반기</SelectItem>
+                    <SelectItem value="annual">연간</SelectItem>
+                    <SelectItem value="adhoc">수시</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            ))}
+          </CardContent>
+        </Card>
 
         <ContractCommissionSection form={form} set={set} />
         <ContractReserveSection form={form} set={set} />

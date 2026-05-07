@@ -3,6 +3,9 @@
 import { useState } from 'react'
 import { OutstandingKPICard } from '@/components/dashboard/OutstandingKPICard'
 import { AgingAnalysisTable } from '@/components/dashboard/AgingAnalysisTable'
+import { ExchangeRatePanel } from '@/components/dashboard/ExchangeRatePanel'
+import { OutstandingSummaryCard } from '@/components/dashboard/OutstandingSummaryCard'
+import { AgingMiniBar } from '@/components/dashboard/AgingMiniBar'
 
 type Direction = 'receivable' | 'payable'
 interface Selection {
@@ -20,12 +23,26 @@ export function DashboardClient() {
   }
 
   return (
-    <>
-      <OutstandingKPICard onSelect={handleSelect} selected={selected} />
+    <div className="space-y-4">
+      {/* 상단: 환율 + KRW 환산 미청산 */}
+      <div className="grid grid-cols-1 gap-4 xl:grid-cols-2">
+        <ExchangeRatePanel />
+        <OutstandingSummaryCard />
+      </div>
+
+      {/* 통화별 미청산 KPI + Aging mini bar */}
+      <div className="grid grid-cols-1 gap-4 xl:grid-cols-3">
+        <div className="xl:col-span-2">
+          <OutstandingKPICard onSelect={handleSelect} selected={selected} />
+        </div>
+        <AgingMiniBar />
+      </div>
+
+      {/* Aging 상세 테이블 */}
       <AgingAnalysisTable
         filterCurrency={selected?.currency}
         onClearFilter={() => setSelected(null)}
       />
-    </>
+    </div>
   )
 }

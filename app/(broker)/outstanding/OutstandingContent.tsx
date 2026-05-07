@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
+import { useSearchParams } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
 import {
@@ -78,6 +79,7 @@ interface Props {
 export function OutstandingContent({ initialContracts, initialCounterparties }: Props) {
   const contracts = useContracts(initialContracts)
   const counterparties = useCounterparties(initialCounterparties)
+  const searchParams = useSearchParams()
 
   const [items, setItems] = useState<OutstandingItem[]>([])
   const [loading, setLoading] = useState(true)
@@ -87,6 +89,9 @@ export function OutstandingContent({ initialContracts, initialCounterparties }: 
   const [filterContractId, setFilterContractId] = useState('all')
   const [filterCounterpartyId, setFilterCounterpartyId] = useState('all')
   const [filterDetailCounterparty, setFilterDetailCounterparty] = useState('all')
+  const [filterAgingBucket, setFilterAgingBucket] = useState(
+    () => searchParams.get('aging') ?? 'all'
+  )
 
   // KPI 카드 선택 상태 (통화 + 방향)
   const [kpiSelected, setKpiSelected] = useState<KpiSelection | null>(null)
@@ -145,6 +150,7 @@ export function OutstandingContent({ initialContracts, initialCounterparties }: 
     if (filterDirection !== 'all' && item.direction !== filterDirection) return false
     if (filterDetailCounterparty !== 'all' && item.counterparty_id !== filterDetailCounterparty)
       return false
+    if (filterAgingBucket !== 'all' && item.aging_bucket !== filterAgingBucket) return false
     return true
   })
 
@@ -385,6 +391,21 @@ export function OutstandingContent({ initialContracts, initialCounterparties }: 
               <SelectItem value="all">전체 방향</SelectItem>
               <SelectItem value="receivable">수취</SelectItem>
               <SelectItem value="payable">지급</SelectItem>
+            </SelectContent>
+          </Select>
+
+          {/* Aging Bucket 필터 */}
+          <Select value={filterAgingBucket} onValueChange={setFilterAgingBucket}>
+            <SelectTrigger className="w-36">
+              <SelectValue placeholder="전체 Aging" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">전체 Aging</SelectItem>
+              <SelectItem value="current">정상 (Current)</SelectItem>
+              <SelectItem value="1-30">1–30일 경과</SelectItem>
+              <SelectItem value="31-60">31–60일 경과</SelectItem>
+              <SelectItem value="61-90">61–90일 경과</SelectItem>
+              <SelectItem value="90+">90일 초과</SelectItem>
             </SelectContent>
           </Select>
 

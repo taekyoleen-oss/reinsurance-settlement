@@ -9,11 +9,26 @@ interface StatusBadgeProps {
   status: StatusType
 }
 
-const STATUS_CONFIG: Record<StatusType, { label: string; variant: 'default' | 'primary' | 'accent' | 'success' | 'warning' | 'destructive' | 'pending' | 'muted' }> = {
+const STATUS_CONFIG: Record<
+  StatusType,
+  {
+    label: string
+    variant:
+      | 'default'
+      | 'primary'
+      | 'accent'
+      | 'success'
+      | 'warning'
+      | 'destructive'
+      | 'pending'
+      | 'muted'
+  }
+> = {
   // ACStatus
   draft: { label: '초안', variant: 'default' },
   pending_approval: { label: '승인대기', variant: 'pending' },
   approved: { label: '승인됨', variant: 'accent' },
+  reviewed: { label: '검수됨', variant: 'success' },
   issued: { label: '발행됨', variant: 'primary' },
   acknowledged: { label: '확인됨', variant: 'success' },
   disputed: { label: '이의신청', variant: 'destructive' },
@@ -26,9 +41,5 @@ const STATUS_CONFIG: Record<StatusType, { label: string; variant: 'default' | 'p
 
 export function StatusBadge({ status }: StatusBadgeProps) {
   const config = STATUS_CONFIG[status] ?? { label: status, variant: 'default' as const }
-  return (
-    <Badge variant={config.variant}>
-      {config.label}
-    </Badge>
-  )
+  return <Badge variant={config.variant}>{config.label}</Badge>
 }

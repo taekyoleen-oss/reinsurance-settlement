@@ -26,9 +26,16 @@ import { TableExportButton } from '@/components/shared/TableExportButton'
 import { Plus, RefreshCw } from 'lucide-react'
 import type { ExchangeRateRow } from '@/types'
 
+interface CurrencyMaster {
+  code: string
+  name_ko: string
+  symbol: string
+}
+
 export default function ExchangeRatesPage() {
   const [rates, setRates] = useState<ExchangeRateRow[]>([])
   const [currencies, setCurrencies] = useState<string[]>([])
+  const [currencyMaster, setCurrencyMaster] = useState<CurrencyMaster[]>([])
   const [loading, setLoading] = useState(true)
   const [showForm, setShowForm] = useState(false)
   const [formLoading, setFormLoading] = useState(false)
@@ -39,9 +46,16 @@ export default function ExchangeRatesPage() {
     to_currency: 'KRW',
     rate_date: new Date().toISOString().split('T')[0],
     rate: '',
-    rate_type: 'daily',
+    rate_type: 'spot',
     source: '',
   })
+
+  useEffect(() => {
+    fetch('/api/currencies')
+      .then((r) => r.json())
+      .then((d) => setCurrencyMaster(d.data ?? []))
+      .catch(() => {})
+  }, [])
 
   const fetchRates = useCallback(() => {
     setLoading(true)
@@ -116,25 +130,39 @@ export default function ExchangeRatesPage() {
             <form onSubmit={handleSubmit} className="grid grid-cols-3 gap-4">
               <div className="space-y-1.5">
                 <Label>기준 통화</Label>
-                <Input
+                <Select
                   value={form.from_currency}
-                  onChange={(e) =>
-                    setForm((f) => ({ ...f, from_currency: e.target.value.toUpperCase() }))
-                  }
-                  className="font-mono w-24"
-                  maxLength={3}
-                />
+                  onValueChange={(v) => setForm((f) => ({ ...f, from_currency: v }))}
+                >
+                  <SelectTrigger className="w-40 font-mono">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {currencyMaster.map((c) => (
+                      <SelectItem key={c.code} value={c.code} className="font-mono">
+                        {c.code} — {c.name_ko}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
               <div className="space-y-1.5">
                 <Label>대상 통화</Label>
-                <Input
+                <Select
                   value={form.to_currency}
-                  onChange={(e) =>
-                    setForm((f) => ({ ...f, to_currency: e.target.value.toUpperCase() }))
-                  }
-                  className="font-mono w-24"
-                  maxLength={3}
-                />
+                  onValueChange={(v) => setForm((f) => ({ ...f, to_currency: v }))}
+                >
+                  <SelectTrigger className="w-40 font-mono">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {currencyMaster.map((c) => (
+                      <SelectItem key={c.code} value={c.code} className="font-mono">
+                        {c.code} — {c.name_ko}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
               <div className="space-y-1.5">
                 <Label>환율 날짜 *</Label>
@@ -165,9 +193,9 @@ export default function ExchangeRatesPage() {
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="daily">일별</SelectItem>
-                    <SelectItem value="monthly">월별</SelectItem>
-                    <SelectItem value="spot">현물</SelectItem>
+                    <SelectItem value="spot">현물(Spot)</SelectItem>
+                    <SelectItem value="monthly_avg">월평균</SelectItem>
+                    <SelectItem value="custom">사용자 지정</SelectItem>
                   </SelectContent>
                 </Select>
               </div>

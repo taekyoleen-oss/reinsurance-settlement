@@ -38,6 +38,10 @@ const BASE_CONTRACT: ContractRow = {
   created_by: 'user-1',
   created_at: '2024-01-01T00:00:00Z',
   updated_at: '2024-01-01T00:00:00Z',
+  premium_settlement_period: null,
+  loss_settlement_period: null,
+  commission_settlement_period: null,
+  verifier_user_id: null,
 }
 
 const BASE_PREMIUM_ROW: PremiumBordereauInsert = {

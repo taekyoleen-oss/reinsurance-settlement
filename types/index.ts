@@ -80,6 +80,20 @@ export type {
   PremiumBordereauUpdate,
   LossBordereauUpdate,
 
+  // v1.5 새 타입
+  ScheduleType,
+  ScheduleStatus,
+  ClaimStatus,
+  ClaimTransactionRole,
+  ContractSettlementScheduleRow,
+  ContractSettlementScheduleInsert,
+  ContractSettlementScheduleUpdate,
+  LossClaimRow,
+  LossClaimInsert,
+  LossClaimUpdate,
+  LossClaimTransactionRow,
+  LossClaimTransactionInsert,
+
   // Database 타입 맵
   Database,
 } from './database'

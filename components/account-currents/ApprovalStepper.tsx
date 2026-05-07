@@ -12,6 +12,7 @@ const STEPS: { status: ACStatus; label: string }[] = [
   { status: 'draft', label: '초안' },
   { status: 'pending_approval', label: '승인대기' },
   { status: 'approved', label: '승인됨' },
+  { status: 'reviewed', label: '검수됨' },
   { status: 'issued', label: '발행됨' },
   { status: 'acknowledged', label: '확인됨' },
 ]
@@ -20,8 +21,9 @@ const STATUS_ORDER: Record<ACStatus, number> = {
   draft: 0,
   pending_approval: 1,
   approved: 2,
-  issued: 3,
-  acknowledged: 4,
+  reviewed: 3,
+  issued: 4,
+  acknowledged: 5,
   disputed: -1,
   cancelled: -1,
 }
@@ -41,7 +43,9 @@ export function ApprovalStepper({ currentStatus }: ApprovalStepperProps) {
               : 'border-border bg-surface-elevated text-[var(--text-muted)]'
           )}
         >
-          {currentStatus === 'disputed' ? '이의신청 상태: 정산서를 취소하고 재발행하세요.' : '취소된 정산서입니다.'}
+          {currentStatus === 'disputed'
+            ? '이의신청 상태: 정산서를 취소하고 재발행하세요.'
+            : '취소된 정산서입니다.'}
         </div>
       )}
 
