@@ -6,7 +6,7 @@ import { z } from 'zod'
 
 const UpdateSchema = z.object({
   status: z.enum(['open', 'in_progress', 'closed', 'cancelled']).optional(),
-  expected_amount: z.number().positive().optional(),
+  expected_amount: z.number().min(0).nullable().optional(),
   notes: z.string().optional(),
 })
 

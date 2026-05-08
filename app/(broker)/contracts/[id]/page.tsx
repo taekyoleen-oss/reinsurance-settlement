@@ -17,6 +17,7 @@ import {
 import { ArrowLeft, ClipboardList, FileText, Layers, Plus } from 'lucide-react'
 import Link from 'next/link'
 import { AttachmentSection } from '@/components/shared/AttachmentSection'
+import { PremiumScheduleCard } from '@/components/contracts/PremiumScheduleCard'
 import type { ContractWithCedantRow } from '@/types'
 
 interface ShareRow {
@@ -181,6 +182,16 @@ export default function ContractDetailPage() {
           </CardContent>
         </Card>
       </div>
+
+      <PremiumScheduleCard
+        contractId={id}
+        premiumSettlementPeriod={
+          (contract as unknown as Record<string, string>).premium_settlement_period ??
+          contract.settlement_period ??
+          'quarterly'
+        }
+        settlementCurrency={contract.settlement_currency}
+      />
 
       <AttachmentSection entityType="contract" entityId={id} />
 

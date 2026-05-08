@@ -21,8 +21,11 @@ export const ContractCreateSchema = z.object({
   broker_id: z.string().uuid().nullable().optional(),
   underwriting_basis: z.enum(['UY', 'clean_cut']).nullable().optional(),
   ceding_commission_rate: z.number().min(0).max(100).nullable().optional(),
+  ceding_commission_amount: z.number().min(0).nullable().optional(),
   profit_commission_rate: z.number().min(0).max(100).nullable().optional(),
+  profit_commission_amount: z.number().min(0).nullable().optional(),
   brokerage_rate: z.number().min(0).max(100).nullable().optional(),
+  brokerage_amount: z.number().min(0).nullable().optional(),
   premium_reserve_rate: z.number().min(0).max(100).nullable().optional(),
   loss_reserve_rate: z.number().min(0).max(100).nullable().optional(),
   interest_rate: z.number().min(0).max(100).nullable().optional(),
@@ -44,7 +47,11 @@ export const ContractShareCreateSchema = z.object({
   signed_line: z.number().min(0).max(100),
   order_of_priority: z.number().int().min(1),
   effective_from: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
-  effective_to: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).nullable().optional(),
+  effective_to: z
+    .string()
+    .regex(/^\d{4}-\d{2}-\d{2}$/)
+    .nullable()
+    .optional(),
 })
 
 export type ContractShareCreateInput = z.infer<typeof ContractShareCreateSchema>

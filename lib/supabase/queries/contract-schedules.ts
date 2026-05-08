@@ -108,7 +108,7 @@ export async function updateSchedule(
   id: string,
   updates: {
     status?: 'open' | 'in_progress' | 'closed' | 'cancelled'
-    expectedAmount?: number
+    expectedAmount?: number | null
     notes?: string
   }
 ) {
