@@ -167,6 +167,58 @@ export type ValidationStatus = 'pending' | 'valid' | 'invalid' | 'override'
 // v1.5
 export type ScheduleType = 'premium' | 'loss' | 'commission'
 export type ScheduleStatus = 'open' | 'in_progress' | 'closed' | 'cancelled'
+// v1.6 — 보험료 수령 확인
+export type ReceiptDirection = 'inbound' | 'outbound'
+export type ReceiptMatchStatus = 'unmatched' | 'partial' | 'matched'
+export type ReceiptStatus =
+  | 'no_schedule'
+  | 'pending'
+  | 'overdue'
+  | 'partially_received'
+  | 'overdue_partial'
+  | 'fully_received'
+
+export interface PremiumReceiptRow {
+  id: string
+  schedule_id: string
+  contract_id: string
+  counterparty_id: string
+  direction: ReceiptDirection
+  received_date: string
+  received_amount: number
+  received_currency: string
+  exchange_rate: number
+  received_amount_krw: number | null
+  bank_reference: string | null
+  receipt_note: string | null
+  linked_transaction_id: string | null
+  linked_ac_id: string | null
+  match_status: ReceiptMatchStatus
+  confirmed_by: string | null
+  created_at: string
+  updated_at: string
+}
+
+export interface ScheduleReceiptSummary {
+  schedule_id: string
+  contract_id: string
+  schedule_type: string
+  period_label: string
+  period_from: string
+  period_to: string
+  due_date: string | null
+  expected_amount: number | null
+  minimum_premium: number | null
+  currency_code: string | null
+  schedule_status: string
+  receipt_count: number
+  total_inbound: number
+  total_outbound: number
+  net_received: number
+  last_received_date: string | null
+  receipt_status: ReceiptStatus
+  outstanding_amount: number
+}
 export type ClaimStatus =
   | 'open'
   | 'collecting'

@@ -109,6 +109,8 @@ export async function updateSchedule(
   updates: {
     status?: 'open' | 'in_progress' | 'closed' | 'cancelled'
     expectedAmount?: number | null
+    dueDate?: string | null
+    minimumPremium?: number | null
     notes?: string
   }
 ) {
@@ -120,6 +122,8 @@ export async function updateSchedule(
     .update({
       ...(updates.status !== undefined && { status: updates.status }),
       ...(updates.expectedAmount !== undefined && { expected_amount: updates.expectedAmount }),
+      ...(updates.dueDate !== undefined && { due_date: updates.dueDate }),
+      ...(updates.minimumPremium !== undefined && { minimum_premium: updates.minimumPremium }),
       ...(updates.notes !== undefined && { notes: updates.notes }),
     })
     .eq('id', id)

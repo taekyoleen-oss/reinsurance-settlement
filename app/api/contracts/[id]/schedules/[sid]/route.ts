@@ -7,6 +7,12 @@ import { z } from 'zod'
 const UpdateSchema = z.object({
   status: z.enum(['open', 'in_progress', 'closed', 'cancelled']).optional(),
   expected_amount: z.number().min(0).nullable().optional(),
+  due_date: z
+    .string()
+    .regex(/^\d{4}-\d{2}-\d{2}$/)
+    .nullable()
+    .optional(),
+  minimum_premium: z.number().min(0).nullable().optional(),
   notes: z.string().optional(),
 })
 
@@ -30,6 +36,8 @@ export async function PATCH(
     const schedule = await updateSchedule(sid, {
       status: parsed.data.status,
       expectedAmount: parsed.data.expected_amount,
+      dueDate: parsed.data.due_date,
+      minimumPremium: parsed.data.minimum_premium,
       notes: parsed.data.notes,
     })
     return NextResponse.json({ schedule })
