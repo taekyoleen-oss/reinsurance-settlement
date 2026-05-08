@@ -8,7 +8,7 @@ import { StatusBadge } from '@/components/shared/StatusBadge'
 import { AccountCurrentViewer } from '@/components/account-currents/AccountCurrentViewer'
 import { ApprovalStepper } from '@/components/account-currents/ApprovalStepper'
 import { ShareTokenPanel } from '@/components/account-currents/ShareTokenPanel'
-import { ArrowLeft, Send, CheckCircle, XCircle, Download } from 'lucide-react'
+import { ArrowLeft, Send, CheckCircle, XCircle, Download, ShieldCheck } from 'lucide-react'
 import Link from 'next/link'
 import type { AccountCurrentRow, AccountCurrentItemRow } from '@/types'
 
@@ -111,12 +111,25 @@ export default function AccountCurrentDetailPage() {
           </Button>
         )}
         {ac.status === 'approved' && (
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => doAction('review')}
+            disabled={actionLoading}
+          >
+            <ShieldCheck className="h-4 w-4 mr-1" />
+            검수
+          </Button>
+        )}
+        {ac.status === 'reviewed' && (
           <Button size="sm" onClick={() => doAction('issue')} disabled={actionLoading}>
             <Send className="h-4 w-4 mr-1" />
             발행
           </Button>
         )}
-        {['draft', 'pending_approval', 'approved', 'issued', 'disputed'].includes(ac.status) && (
+        {['draft', 'pending_approval', 'approved', 'reviewed', 'issued', 'disputed'].includes(
+          ac.status
+        ) && (
           <Button
             size="sm"
             variant="destructive"

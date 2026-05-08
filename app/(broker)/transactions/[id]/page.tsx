@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { format } from 'date-fns'
 import { toast } from 'sonner'
@@ -8,11 +8,25 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { StatusBadge } from '@/components/shared/StatusBadge'
+import { ConfirmVerifyActions } from '@/components/shared/ConfirmVerifyActions'
+import { ReviewMetaCard } from '@/components/shared/ReviewMetaCard'
 import { ArrowLeft, Trash2, Lock } from 'lucide-react'
 import Link from 'next/link'
 import { AttachmentSection } from '@/components/shared/AttachmentSection'
 import type { TransactionRow } from '@/types'
 import type { ReactNode } from 'react'
+
+type TxWithReview = TransactionRow & {
+  review_status?: string | null
+  confirmer_name?: string | null
+  confirmer_email?: string | null
+  confirmed_at?: string | null
+  verifier_name?: string | null
+  verifier_email?: string | null
+  verified_at?: string | null
+  review_notes?: string | null
+  loss_reference?: string | null
+}
 
 const TX_TYPE_LABELS: Record<string, string> = {
   premium: '보험료',
@@ -25,17 +39,26 @@ const TX_TYPE_LABELS: Record<string, string> = {
 export default function TransactionDetailPage() {
   const { id } = useParams<{ id: string }>()
   const router = useRouter()
-  const [tx, setTx] = useState<TransactionRow | null>(null)
+  const [tx, setTx] = useState<TxWithReview | null>(null)
   const [loading, setLoading] = useState(true)
   const [deleting, setDeleting] = useState(false)
+  const [userRole, setUserRole] = useState('')
 
-  useEffect(() => {
+  const loadTx = useCallback(() => {
     fetch(`/api/transactions/${id}`)
       .then((r) => r.json())
       .then((d) => setTx(d.data ?? d))
       .catch(() => {})
       .finally(() => setLoading(false))
   }, [id])
+
+  useEffect(() => {
+    loadTx()
+    fetch('/api/me')
+      .then((r) => r.json())
+      .then((d) => setUserRole(d.role ?? ''))
+      .catch(() => {})
+  }, [loadTx])
 
   const handleDelete = async () => {
     if (!confirm('이 거래를 삭제하시겠습니까?')) return
@@ -70,8 +93,7 @@ export default function TransactionDetailPage() {
     )
   }
 
-  const lossReference =
-    (tx as TransactionRow & { loss_reference?: string | null }).loss_reference ?? '-'
+  const lossReference = tx.loss_reference ?? '-'
 
   const fields: Array<{ label: string; value: ReactNode; mono?: boolean }> = [
     { label: '거래 ID', value: tx.id, mono: true },
@@ -131,6 +153,41 @@ export default function TransactionDetailPage() {
       </div>
 
       <AttachmentSection entityType="transaction" entityId={id} />
+
+      {tx.review_status !== undefined && (
+        <div className="flex flex-wrap gap-3 items-start">
+          <ConfirmVerifyActions
+            entityId={id}
+            entityType="transaction"
+            reviewStatus={
+              (tx.review_status ?? 'unconfirmed') as
+                | 'unconfirmed'
+                | 'confirmed'
+                | 'verified'
+                | 'rejected'
+            }
+            userRole={userRole}
+            onSuccess={loadTx}
+          />
+        </div>
+      )}
+
+      <ReviewMetaCard
+        reviewStatus={
+          (tx.review_status ?? 'unconfirmed') as
+            | 'unconfirmed'
+            | 'confirmed'
+            | 'verified'
+            | 'rejected'
+        }
+        confirmerName={tx.confirmer_name}
+        confirmerEmail={tx.confirmer_email}
+        confirmedAt={tx.confirmed_at}
+        verifierName={tx.verifier_name}
+        verifierEmail={tx.verifier_email}
+        verifiedAt={tx.verified_at}
+        reviewNotes={tx.review_notes}
+      />
 
       <Card>
         <CardHeader>

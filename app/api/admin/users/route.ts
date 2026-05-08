@@ -1,5 +1,6 @@
 ﻿import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
+import { handleApiError } from '@/lib/api/error-handler'
 import { listUsers, createUser } from '@/lib/supabase/queries/users'
 import { z } from 'zod'
 

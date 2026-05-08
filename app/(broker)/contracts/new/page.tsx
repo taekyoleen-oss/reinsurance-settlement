@@ -186,7 +186,10 @@ export default function NewContractPage() {
             ].map(({ key, label }) => (
               <div key={key} className="space-y-1.5">
                 <label className="text-sm text-[var(--text-secondary)]">{label}</label>
-                <Select value={(form as Record<string, string>)[key]} onValueChange={set(key)}>
+                <Select
+                  value={(form as unknown as Record<string, string>)[key]}
+                  onValueChange={set(key)}
+                >
                   <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>

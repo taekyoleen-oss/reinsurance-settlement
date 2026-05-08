@@ -25,6 +25,7 @@ import { SettlementMatchPanel } from '@/components/settlements/SettlementMatchPa
 import { SettlementForm } from '@/components/settlements/SettlementForm'
 import { TableExportButton } from '@/components/shared/TableExportButton'
 import { Plus, ChevronsRight } from 'lucide-react'
+import Link from 'next/link'
 import { useCounterparties, useCurrencies } from '@/hooks/use-reference-data'
 import type { SettlementRow } from '@/types'
 
@@ -240,7 +241,9 @@ export default function SettlementsPage() {
               {settlements.map((s) => (
                 <TableRow key={s.id}>
                   <TableCell className="whitespace-nowrap text-xs font-mono text-[var(--text-secondary)]">
-                    {s.settlement_no}
+                    <Link href={`/settlements/${s.id}`} className="text-primary hover:underline">
+                      {s.settlement_no}
+                    </Link>
                   </TableCell>
                   <TableCell className="whitespace-nowrap text-xs font-mono text-[var(--text-secondary)]">
                     {format(new Date(s.settlement_date), 'yyyy-MM-dd')}
