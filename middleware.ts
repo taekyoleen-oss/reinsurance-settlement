@@ -89,24 +89,30 @@ export async function middleware(request: NextRequest) {
     ]
     const isBrokerPath = brokerPaths.some((p) => pathname.startsWith(p))
     if (isBrokerPath) {
-      const allowedBroker = ['broker_technician', 'broker_manager', 'reviewer', 'admin']
+      // broker_staff = 이전 role명 (하위 호환)
+      const allowedBroker = [
+        'broker_technician',
+        'broker_staff',
+        'broker_manager',
+        'reviewer',
+        'admin',
+      ]
+      const externalOnly = ['cedant_viewer', 'reinsurer_viewer']
       if (!allowedBroker.includes(role)) {
-        // 외부 뷰어면 외부 대시보드로, 역할 미확인(빈 값)이면 로그인으로
-        if (['cedant_viewer', 'reinsurer_viewer'].includes(role)) {
+        if (externalOnly.includes(role)) {
           return NextResponse.redirect(new URL('/external/dashboard', request.url))
         }
-        return NextResponse.redirect(new URL('/login', request.url))
+        // role 미확인(프로필 없음 등) → 루프 방지를 위해 그냥 통과
+        // 실제 데이터 접근은 API Route Handler의 withBroker/withBrokerSchema에서 차단
       }
     }
 
-    // 로그인된 사용자가 /login 접근 시 역할에 맞게 리다이렉트
+    // 로그인된 사용자가 /login 접근 시 → 무조건 대시보드로 (루프 방지)
     if (pathname.startsWith('/login')) {
       if (['cedant_viewer', 'reinsurer_viewer'].includes(role)) {
         return NextResponse.redirect(new URL('/external/dashboard', request.url))
       }
-      if (role) {
-        return NextResponse.redirect(new URL('/dashboard', request.url))
-      }
+      return NextResponse.redirect(new URL('/dashboard', request.url))
     }
   }
 
