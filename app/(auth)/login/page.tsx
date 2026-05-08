@@ -1,7 +1,6 @@
 'use client'
 
 import { useState } from 'react'
-import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -10,14 +9,16 @@ import { createClient } from '@/lib/supabase/client'
 import { toast } from 'sonner'
 
 export default function LoginPage() {
-  const router = useRouter()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [loading, setLoading] = useState(false)
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!email || !password) { toast.error('이메일과 비밀번호를 입력하세요.'); return }
+    if (!email || !password) {
+      toast.error('이메일과 비밀번호를 입력하세요.')
+      return
+    }
 
     setLoading(true)
     try {
@@ -25,7 +26,7 @@ export default function LoginPage() {
       const { error } = await supabase.auth.signInWithPassword({ email, password })
       if (error) throw new Error(error.message)
       toast.success('로그인 되었습니다.')
-      router.push('/dashboard')
+      window.location.href = '/dashboard'
     } catch (err) {
       toast.error(err instanceof Error ? err.message : '로그인 실패')
     } finally {

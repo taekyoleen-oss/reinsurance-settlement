@@ -80,6 +80,7 @@ export async function middleware(request: NextRequest) {
       '/transactions',
       '/account-currents',
       '/settlements',
+      '/claims',
       '/outstanding',
       '/reconciliation',
       '/reports',
