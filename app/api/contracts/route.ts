@@ -3,7 +3,7 @@ import { createClient } from '@/lib/supabase/server'
 import { attachCedantSummaries } from '@/lib/supabase/attach-cedant'
 import { withBrokerAuth, withBrokerSchema } from '@/lib/api/handler'
 import { ContractCreateSchema } from '@/lib/api/schemas/contract'
-import type { ContractRow } from '@/types/database'
+import type { ContractRow } from '@/types'
 
 export const GET = withBrokerAuth(async (_auth, req) => {
   const supabase = await createClient()

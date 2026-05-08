@@ -17,7 +17,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { CedantFilterSelect } from '@/components/contracts/CedantFilterSelect'
 import { PremiumBordereauTable, LossBordereauTable } from '@/components/bordereau/BordereauTable'
 import { useContracts } from '@/hooks/use-reference-data'
-import type { PremiumBordereauRow, LossBordereauRow } from '@/types/database'
+import type { PremiumBordereauRow, LossBordereauRow } from '@/types'
 
 export function BordereauPageClient() {
   const router = useRouter()

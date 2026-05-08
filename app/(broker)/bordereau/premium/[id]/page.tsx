@@ -8,7 +8,7 @@ import { FieldHelp } from '@/components/shared/FieldHelp'
 import { AttachmentSection } from '@/components/shared/AttachmentSection'
 import { ArrowLeft, Save, Calculator, Trash2 } from 'lucide-react'
 import Link from 'next/link'
-import type { PremiumBordereauRow } from '@/types/database'
+import type { PremiumBordereauRow } from '@/types'
 
 export default function PremiumBordereauEditPage() {
   const { id } = useParams<{ id: string }>()

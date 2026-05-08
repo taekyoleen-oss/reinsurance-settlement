@@ -6,7 +6,7 @@ import type { ACStatus, TransactionStatus } from '@/types'
 type StatusType = ACStatus | TransactionStatus
 
 interface StatusBadgeProps {
-  status: StatusType
+  status: string
 }
 
 const STATUS_CONFIG: Record<
@@ -40,6 +40,9 @@ const STATUS_CONFIG: Record<
 }
 
 export function StatusBadge({ status }: StatusBadgeProps) {
-  const config = STATUS_CONFIG[status] ?? { label: status, variant: 'default' as const }
+  const config = STATUS_CONFIG[status as StatusType] ?? {
+    label: status,
+    variant: 'default' as const,
+  }
   return <Badge variant={config.variant}>{config.label}</Badge>
 }

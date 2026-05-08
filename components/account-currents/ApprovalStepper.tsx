@@ -5,7 +5,7 @@ import { cn } from '@/lib/utils/cn'
 import type { ACStatus } from '@/types'
 
 interface ApprovalStepperProps {
-  currentStatus: ACStatus
+  currentStatus: string
 }
 
 const STEPS: { status: ACStatus; label: string }[] = [
@@ -29,7 +29,7 @@ const STATUS_ORDER: Record<ACStatus, number> = {
 }
 
 export function ApprovalStepper({ currentStatus }: ApprovalStepperProps) {
-  const currentOrder = STATUS_ORDER[currentStatus]
+  const currentOrder = STATUS_ORDER[currentStatus as ACStatus] ?? -1
   const isSpecial = currentStatus === 'disputed' || currentStatus === 'cancelled'
 
   return (

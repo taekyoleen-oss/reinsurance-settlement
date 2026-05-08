@@ -1,5 +1,5 @@
 import { createClient } from '@/lib/supabase/server'
-import type { SettlementRow, SettlementInsert, SettlementMatchRow } from '@/types/database'
+import type { SettlementRow, SettlementInsert, SettlementMatchRow } from '@/types'
 import { validateExchangeRate } from '@/lib/utils/exchange-rate'
 import type { PaginationParams, PagedResult } from './types'
 

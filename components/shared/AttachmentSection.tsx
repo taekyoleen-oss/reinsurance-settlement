@@ -5,7 +5,7 @@ import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Paperclip, Upload, X, Download, Trash2, FileText, ImageIcon, File } from 'lucide-react'
-import type { AttachmentEntityType, AttachmentRow } from '@/types/database'
+import type { AttachmentEntityType, AttachmentRow } from '@/types'
 
 // ── 유틸 ─────────────────────────────────────────────────────────────────────
 

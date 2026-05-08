@@ -7,12 +7,9 @@ import type {
   LossBordereauInsert,
   LossBordereauUpdate,
   ContractRow,
-} from '@/types/database'
+} from '@/types'
 import type { BordereauFilters } from '@/types'
-import {
-  validatePremiumBordereau,
-  validateLossBordereau,
-} from '@/lib/utils/bordereau-validators'
+import { validatePremiumBordereau, validateLossBordereau } from '@/lib/utils/bordereau-validators'
 
 // Supabase 클라이언트는 DB 마이그레이션 적용 후 gen types로 재생성되어야
 // 정확한 타입을 제공합니다. 그 전까지는 명시적 단언으로 컴파일 오류를 방지합니다.
@@ -36,9 +33,7 @@ export async function getPremiumBordereau(
   filters: BordereauFilters = {}
 ): Promise<PremiumBordereauRow[]> {
   const supabase = await createClient()
-  let query = (await pb(supabase))
-    .select('*')
-    .order('created_at', { ascending: false })
+  let query = (await pb(supabase)).select('*').order('created_at', { ascending: false })
 
   if (filters.contractId) query = query.eq('contract_id', filters.contractId)
   if (filters.periodYyyyqn) query = query.eq('period_yyyyqn', filters.periodYyyyqn)
@@ -54,10 +49,7 @@ export async function getPremiumBordereau(
 
 export async function getPremiumBordereauById(id: string): Promise<PremiumBordereauRow | null> {
   const supabase = await createClient()
-  const { data, error } = await (await pb(supabase))
-    .select('*')
-    .eq('id', id)
-    .single()
+  const { data, error } = await (await pb(supabase)).select('*').eq('id', id).single()
   if (error) return null
   return data as PremiumBordereauRow
 }
@@ -73,8 +65,8 @@ function buildPremiumPayload(
     validation_messages:
       errors.length + warnings.length > 0
         ? [
-            ...errors.map(e => ({ type: 'error', message: e })),
-            ...warnings.map(w => ({ type: 'warning', message: w })),
+            ...errors.map((e) => ({ type: 'error', message: e })),
+            ...warnings.map((w) => ({ type: 'warning', message: w })),
           ]
         : null,
   }
@@ -86,10 +78,7 @@ export async function insertPremiumBordereau(
 ): Promise<PremiumBordereauRow> {
   const supabase = await createClient()
   const payload = buildPremiumPayload(row, contract)
-  const { data, error } = await (await pb(supabase))
-    .insert(payload)
-    .select()
-    .single()
+  const { data, error } = await (await pb(supabase)).insert(payload).select().single()
   if (error) throw error
   return data as PremiumBordereauRow
 }
@@ -116,7 +105,9 @@ export async function updatePremiumBordereau(
   update: PremiumBordereauUpdate
 ): Promise<PremiumBordereauRow> {
   const supabase = await createClient()
-  const { data, error } = await (await pb(supabase))
+  const { data, error } = await (
+    await pb(supabase)
+  )
     .update({ ...update, updated_at: new Date().toISOString() })
     .eq('id', id)
     .select()
@@ -150,9 +141,7 @@ export async function getLossBordereau(
   filters: BordereauFilters = {}
 ): Promise<LossBordereauRow[]> {
   const supabase = await createClient()
-  let query = (await lb(supabase))
-    .select('*')
-    .order('created_at', { ascending: false })
+  let query = (await lb(supabase)).select('*').order('created_at', { ascending: false })
 
   if (filters.contractId) query = query.eq('contract_id', filters.contractId)
   if (filters.periodYyyyqn) query = query.eq('period_yyyyqn', filters.periodYyyyqn)
@@ -167,18 +156,12 @@ export async function getLossBordereau(
 
 export async function getLossBordereauById(id: string): Promise<LossBordereauRow | null> {
   const supabase = await createClient()
-  const { data, error } = await (await lb(supabase))
-    .select('*')
-    .eq('id', id)
-    .single()
+  const { data, error } = await (await lb(supabase)).select('*').eq('id', id).single()
   if (error) return null
   return data as LossBordereauRow
 }
 
-function buildLossPayload(
-  row: LossBordereauInsert,
-  contract: ContractRow
-): LossBordereauInsert {
+function buildLossPayload(row: LossBordereauInsert, contract: ContractRow): LossBordereauInsert {
   const { valid, errors, warnings } = validateLossBordereau(row, contract)
   return {
     ...row,
@@ -186,8 +169,8 @@ function buildLossPayload(
     validation_messages:
       errors.length + warnings.length > 0
         ? [
-            ...errors.map(e => ({ type: 'error', message: e })),
-            ...warnings.map(w => ({ type: 'warning', message: w })),
+            ...errors.map((e) => ({ type: 'error', message: e })),
+            ...warnings.map((w) => ({ type: 'warning', message: w })),
           ]
         : null,
   }
@@ -199,10 +182,7 @@ export async function insertLossBordereau(
 ): Promise<LossBordereauRow> {
   const supabase = await createClient()
   const payload = buildLossPayload(row, contract)
-  const { data, error } = await (await lb(supabase))
-    .insert(payload)
-    .select()
-    .single()
+  const { data, error } = await (await lb(supabase)).insert(payload).select().single()
   if (error) throw error
   return data as LossBordereauRow
 }
@@ -229,7 +209,9 @@ export async function updateLossBordereau(
   update: LossBordereauUpdate
 ): Promise<LossBordereauRow> {
   const supabase = await createClient()
-  const { data, error } = await (await lb(supabase))
+  const { data, error } = await (
+    await lb(supabase)
+  )
     .update({ ...update, updated_at: new Date().toISOString() })
     .eq('id', id)
     .select()

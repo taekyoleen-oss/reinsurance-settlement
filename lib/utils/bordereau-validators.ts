@@ -1,4 +1,4 @@
-import type { ContractRow, PremiumBordereauInsert, LossBordereauInsert } from '@/types/database'
+import type { ContractRow, PremiumBordereauInsert, LossBordereauInsert } from '@/types'
 
 export interface ValidationResult {
   valid: boolean
@@ -25,12 +25,16 @@ export function validatePremiumBordereau(
   const contractFrom = new Date(contract.inception_date)
 
   if (riskFrom < contractFrom) {
-    errors.push(`위험 시작일(${row.risk_period_from})이 계약 시작일(${contract.inception_date})보다 앞입니다`)
+    errors.push(
+      `위험 시작일(${row.risk_period_from})이 계약 시작일(${contract.inception_date})보다 앞입니다`
+    )
   }
   if (contract.expiry_date) {
     const contractTo = new Date(contract.expiry_date)
     if (riskTo > contractTo) {
-      warnings.push(`위험 종료일(${row.risk_period_to})이 계약 종료일(${contract.expiry_date})을 초과합니다`)
+      warnings.push(
+        `위험 종료일(${row.risk_period_to})이 계약 종료일(${contract.expiry_date})을 초과합니다`
+      )
     }
   }
 
@@ -153,7 +157,7 @@ export function parsePremiumCsvRow(raw: Record<string, string>): {
 
   const cessionPct = parseFloat(raw.cession_pct)
   if (isNaN(cessionPct)) parseErrors.push('출재비율(cession_pct)이 숫자가 아닙니다')
-  else parsed.cession_pct = cessionPct > 1 ? cessionPct / 100 : cessionPct  // 30%로 입력 시 0.30으로 자동 변환
+  else parsed.cession_pct = cessionPct > 1 ? cessionPct / 100 : cessionPct // 30%로 입력 시 0.30으로 자동 변환
 
   if (parsed.original_premium !== undefined && parsed.cession_pct !== undefined) {
     const cededFromCsv = parseFloat(raw.ceded_premium)

@@ -5,7 +5,7 @@ import {
   parsePremiumCsvRow,
   parseLossCsvRow,
 } from '@/lib/utils/bordereau-validators'
-import type { ContractRow, PremiumBordereauInsert, LossBordereauInsert } from '@/types/database'
+import type { ContractRow, PremiumBordereauInsert, LossBordereauInsert } from '@/types'
 
 // ─── 픽스처 ────────────────────────────────────────────────
 

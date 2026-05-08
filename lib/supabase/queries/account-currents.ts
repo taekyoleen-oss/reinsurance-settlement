@@ -4,11 +4,8 @@ import type {
   AccountCurrentInsert,
   AccountCurrentItemRow,
   ACStatus,
-} from '@/types/database'
-import {
-  aggregateAccountCurrent,
-  checkDuplicateAC,
-} from '@/lib/utils/account-current'
+} from '@/types'
+import { aggregateAccountCurrent, checkDuplicateAC } from '@/lib/utils/account-current'
 import type { PaginationParams, PagedResult } from './types'
 
 export type { PaginationParams, PagedResult }
@@ -32,6 +29,7 @@ export async function getAccountCurrents(
   pagination?: PaginationParams
 ): Promise<PagedResult<AccountCurrentRow>> {
   const supabase = await createClient()
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const db = supabase as any
 
   let contractIdsForCedant: string[] | null = null
@@ -65,10 +63,10 @@ export async function getAccountCurrents(
   if (filters.contractId) query = query.eq('contract_id', filters.contractId)
   else if (contractIdsForCedant) query = query.in('contract_id', contractIdsForCedant)
   if (filters.counterpartyId) query = query.eq('counterparty_id', filters.counterpartyId)
-  if (filters.status)     query = query.eq('status', filters.status)
+  if (filters.status) query = query.eq('status', filters.status)
   if (filters.periodType) query = query.eq('period_type', filters.periodType)
-  if (filters.dateFrom)   query = query.gte('period_from', filters.dateFrom)
-  if (filters.dateTo)     query = query.lte('period_to', filters.dateTo)
+  if (filters.dateFrom) query = query.gte('period_from', filters.dateFrom)
+  if (filters.dateTo) query = query.lte('period_to', filters.dateTo)
 
   if (pagination) {
     const from = (pagination.page - 1) * pagination.pageSize
@@ -77,7 +75,7 @@ export async function getAccountCurrents(
 
   const { data, count, error } = await query
   if (error) throw error
-  return { data: data ?? [], total: count ?? (data?.length ?? 0) }
+  return { data: data ?? [], total: count ?? data?.length ?? 0 }
 }
 
 /**
@@ -90,6 +88,7 @@ export async function getAccountCurrentById(id: string): Promise<
   | null
 > {
   const supabase = await createClient()
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const db = supabase as any
 
   const { data: ac, error: acError } = await db
@@ -128,6 +127,7 @@ export async function createAccountCurrent(
   }
 ): Promise<{ ac: AccountCurrentRow; isDuplicate: boolean }> {
   const supabase = await createClient()
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const db = supabase as any
 
   const periodFrom = new Date(data.period_from)
@@ -188,6 +188,7 @@ export async function updateACStatus(
   extra?: Partial<AccountCurrentRow>
 ): Promise<AccountCurrentRow> {
   const supabase = await createClient()
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const db = supabase as any
 
   const updates: Record<string, unknown> = {

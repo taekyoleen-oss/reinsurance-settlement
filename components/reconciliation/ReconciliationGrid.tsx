@@ -21,10 +21,13 @@ function fmt(n: number) {
   }).format(n)
 }
 
-const STATUS_STYLE: Record<ReconciliationStatus, { label: string; class: string }> = {
+const STATUS_STYLE: Partial<Record<ReconciliationStatus, { label: string; class: string }>> = {
   matched: { label: '일치', class: 'text-success' },
   unmatched: { label: '불일치', class: 'text-warning-urgent' },
+  open: { label: '미확인', class: 'text-[var(--text-muted)]' },
+  agreed: { label: '합의됨', class: 'text-success' },
   disputed: { label: '이의', class: 'text-warning' },
+  waived: { label: '면제', class: 'text-accent' },
 }
 
 interface ReconciliationGridProps {
@@ -79,7 +82,7 @@ export function ReconciliationGrid({ contractId, counterpartyId }: Reconciliatio
               item.broker_amount,
               item.counterparty_claimed_amount ?? '',
               diff,
-              STATUS_STYLE[item.status].label,
+              (STATUS_STYLE[item.status as ReconciliationStatus] ?? { label: item.status }).label,
             ]
           })}
           filename="대사현황"
@@ -108,7 +111,10 @@ export function ReconciliationGrid({ contractId, counterpartyId }: Reconciliatio
             </TableHeader>
             <TableBody>
               {items.map((item) => {
-                const st = STATUS_STYLE[item.status]
+                const st = STATUS_STYLE[item.status as ReconciliationStatus] ?? {
+                  label: item.status,
+                  class: '',
+                }
                 const diff =
                   item.difference ??
                   (item.counterparty_claimed_amount != null

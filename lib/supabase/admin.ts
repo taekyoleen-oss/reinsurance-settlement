@@ -1,5 +1,5 @@
 import { createClient } from '@supabase/supabase-js'
-import type { Database } from '@/types/database'
+import type { Database } from '@/types'
 
 // SERVICE_ROLE_KEY 사용 — 서버사이드 전용 (RLS 우회)
 // 클라이언트 컴포넌트에서 절대 import 금지

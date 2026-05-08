@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { adminClient } from '@/lib/supabase/admin'
 import { requireUser } from '@/lib/api/auth'
 import { handleApiError } from '@/lib/api/error-handler'
-import type { AttachmentEntityType } from '@/types/database'
+import type { AttachmentEntityType } from '@/types'
 
 const BUCKET = 'attachments'
 const MAX_FILE_SIZE = 20 * 1024 * 1024 // 20MB

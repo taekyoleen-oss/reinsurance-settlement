@@ -1,5 +1,5 @@
 import { adminClient } from '@/lib/supabase/admin'
-import type { ShareTokenRow, ShareTokenInsert, ShareTokenLogInsert, TokenAction } from '@/types/database'
+import type { ShareTokenRow, ShareTokenInsert, ShareTokenLogInsert, TokenAction } from '@/types'
 import { randomUUID } from 'crypto'
 
 /**
@@ -28,12 +28,9 @@ export async function createShareToken(
     notes: notes ?? null,
   }
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const db = adminClient as any
-  const { data, error } = await db
-    .from('rs_share_tokens')
-    .insert(insert)
-    .select()
-    .single()
+  const { data, error } = await db.from('rs_share_tokens').insert(insert).select().single()
 
   if (error) throw error
   return data as ShareTokenRow
@@ -43,6 +40,7 @@ export async function createShareToken(
  * 토큰 검증 — 만료/취소된 경우 null 반환
  */
 export async function validateToken(token: string): Promise<ShareTokenRow | null> {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const db = adminClient as any
   const { data, error } = await db
     .from('rs_share_tokens')
@@ -60,6 +58,7 @@ export async function validateToken(token: string): Promise<ShareTokenRow | null
  * 토큰 취소
  */
 export async function revokeToken(tokenId: string, revokedBy: string): Promise<void> {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const db = adminClient as any
   const { error } = await db
     .from('rs_share_tokens')
@@ -89,5 +88,6 @@ export async function logTokenAccess(
     user_agent: userAgent ?? null,
   }
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   await (adminClient as any).from('rs_share_token_logs').insert(insert)
 }

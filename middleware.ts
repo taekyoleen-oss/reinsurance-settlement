@@ -13,10 +13,9 @@ export async function middleware(request: NextRequest) {
         getAll() {
           return request.cookies.getAll()
         },
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         setAll(cookiesToSet: { name: string; value: string; options?: any }[]) {
-          cookiesToSet.forEach(({ name, value }) =>
-            request.cookies.set(name, value)
-          )
+          cookiesToSet.forEach(({ name, value }) => request.cookies.set(name, value))
           supabaseResponse = NextResponse.next({ request })
           cookiesToSet.forEach(({ name, value, options }) =>
             supabaseResponse.cookies.set(name, value, options)
@@ -89,9 +88,13 @@ export async function middleware(request: NextRequest) {
     ]
     const isBrokerPath = brokerPaths.some((p) => pathname.startsWith(p))
     if (isBrokerPath) {
-      const allowedBroker = ['broker_technician', 'broker_manager', 'admin']
+      const allowedBroker = ['broker_technician', 'broker_manager', 'reviewer', 'admin']
       if (!allowedBroker.includes(role)) {
-        return NextResponse.redirect(new URL('/external/dashboard', request.url))
+        // 외부 뷰어면 외부 대시보드로, 역할 미확인(빈 값)이면 로그인으로
+        if (['cedant_viewer', 'reinsurer_viewer'].includes(role)) {
+          return NextResponse.redirect(new URL('/external/dashboard', request.url))
+        }
+        return NextResponse.redirect(new URL('/login', request.url))
       }
     }
 
@@ -100,7 +103,9 @@ export async function middleware(request: NextRequest) {
       if (['cedant_viewer', 'reinsurer_viewer'].includes(role)) {
         return NextResponse.redirect(new URL('/external/dashboard', request.url))
       }
-      return NextResponse.redirect(new URL('/dashboard', request.url))
+      if (role) {
+        return NextResponse.redirect(new URL('/dashboard', request.url))
+      }
     }
   }
 

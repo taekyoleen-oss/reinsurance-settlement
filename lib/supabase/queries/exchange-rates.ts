@@ -1,5 +1,5 @@
 import { createClient } from '@/lib/supabase/server'
-import type { ExchangeRateRow, ExchangeRateInsert } from '@/types/database'
+import type { ExchangeRateRow, ExchangeRateInsert } from '@/types'
 
 /**
  * 날짜 기준 환율 조회 (from_currency → KRW)
@@ -90,6 +90,7 @@ export async function getAllRates(
  */
 export async function createRate(data: ExchangeRateInsert): Promise<ExchangeRateRow> {
   const supabase = await createClient()
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const db = supabase as any
 
   const { data: rate, error } = await db

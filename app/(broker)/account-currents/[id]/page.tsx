@@ -10,7 +10,7 @@ import { ApprovalStepper } from '@/components/account-currents/ApprovalStepper'
 import { ShareTokenPanel } from '@/components/account-currents/ShareTokenPanel'
 import { ArrowLeft, Send, CheckCircle, XCircle, Download, ShieldCheck } from 'lucide-react'
 import Link from 'next/link'
-import type { AccountCurrentRow, AccountCurrentItemRow } from '@/types'
+import type { AccountCurrentRow, AccountCurrentItemRow, ACStatus } from '@/types'
 
 export default function AccountCurrentDetailPage() {
   const { id } = useParams<{ id: string }>()
@@ -88,14 +88,14 @@ export default function AccountCurrentDetailPage() {
             정산서 {ac.ac_no ?? id.slice(0, 8)}
           </h1>
         </div>
-        <StatusBadge status={ac.status} />
+        <StatusBadge status={ac.status as ACStatus} />
         <Button variant="default" size="sm" onClick={() => window.print()}>
           <Download className="h-4 w-4 mr-1" />
           PDF
         </Button>
       </div>
 
-      <ApprovalStepper currentStatus={ac.status} />
+      <ApprovalStepper currentStatus={ac.status as ACStatus} />
 
       <div className="flex gap-2 print:hidden flex-wrap">
         {ac.status === 'draft' && (

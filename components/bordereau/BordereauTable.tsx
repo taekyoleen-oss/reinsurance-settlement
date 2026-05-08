@@ -2,20 +2,28 @@
 
 import { Badge } from '@/components/ui/badge'
 import { cn } from '@/lib/utils/cn'
-import type { PremiumBordereauRow, LossBordereauRow } from '@/types/database'
+import type { PremiumBordereauRow, LossBordereauRow } from '@/types'
 
 // ─── 검증 상태 뱃지 ───────────────────────────
 
 function ValidationBadge({ status }: { status: string }) {
   const cfg = {
-    valid:   { label: '정상',     cls: 'bg-success/15 text-success border-success/30' },
-    warning: { label: '경고',     cls: 'bg-warning-urgent/15 text-warning-urgent border-warning-urgent/30' },
-    error:   { label: '오류',     cls: 'bg-destructive/15 text-destructive border-destructive/30' },
-    pending: { label: '미검증',   cls: 'bg-surface-elevated text-[var(--text-muted)] border-border' },
+    valid: { label: '정상', cls: 'bg-success/15 text-success border-success/30' },
+    warning: {
+      label: '경고',
+      cls: 'bg-warning-urgent/15 text-warning-urgent border-warning-urgent/30',
+    },
+    error: { label: '오류', cls: 'bg-destructive/15 text-destructive border-destructive/30' },
+    pending: { label: '미검증', cls: 'bg-surface-elevated text-[var(--text-muted)] border-border' },
   }[status] ?? { label: status, cls: 'bg-surface-elevated text-[var(--text-muted)] border-border' }
 
   return (
-    <span className={cn('inline-flex items-center rounded border px-1.5 py-0.5 text-[10px] font-medium', cfg.cls)}>
+    <span
+      className={cn(
+        'inline-flex items-center rounded border px-1.5 py-0.5 text-[10px] font-medium',
+        cfg.cls
+      )}
+    >
       {cfg.label}
     </span>
   )
@@ -60,7 +68,7 @@ export function PremiumBordereauTable({ rows, onSelect }: PremiumTableProps) {
           </tr>
         </thead>
         <tbody>
-          {rows.map(row => (
+          {rows.map((row) => (
             <tr
               key={row.id}
               onClick={() => onSelect?.(row)}
@@ -76,9 +84,15 @@ export function PremiumBordereauTable({ rows, onSelect }: PremiumTableProps) {
                 {row.risk_period_from} ~ {row.risk_period_to}
               </td>
               <td className="px-3 py-2 text-right font-mono">{fmtNum(row.sum_insured)}</td>
-              <td className="px-3 py-2 text-right font-mono">{fmtNum(row.original_premium, row.currency)}</td>
-              <td className="px-3 py-2 text-right font-mono">{(row.cession_pct * 100).toFixed(2)}%</td>
-              <td className="px-3 py-2 text-right font-mono font-semibold">{fmtNum(row.ceded_premium, row.currency)}</td>
+              <td className="px-3 py-2 text-right font-mono">
+                {fmtNum(row.original_premium, row.currency)}
+              </td>
+              <td className="px-3 py-2 text-right font-mono">
+                {(row.cession_pct * 100).toFixed(2)}%
+              </td>
+              <td className="px-3 py-2 text-right font-mono font-semibold">
+                {fmtNum(row.ceded_premium, row.currency)}
+              </td>
               <td className="px-3 py-2">
                 <EntryTypeBadge type={row.entry_type} />
               </td>
@@ -94,11 +108,14 @@ export function PremiumBordereauTable({ rows, onSelect }: PremiumTableProps) {
 }
 
 function EntryTypeBadge({ type }: { type: string }) {
-  const cfg: Record<string, { label: string; variant: 'default' | 'primary' | 'destructive' | 'accent' }> = {
-    new:        { label: '신규',   variant: 'primary' },
-    cancel:     { label: '취소',   variant: 'destructive' },
-    refund:     { label: '환급',   variant: 'accent' },
-    adjustment: { label: '조정',   variant: 'default' },
+  const cfg: Record<
+    string,
+    { label: string; variant: 'default' | 'primary' | 'destructive' | 'accent' }
+  > = {
+    new: { label: '신규', variant: 'primary' },
+    cancel: { label: '취소', variant: 'destructive' },
+    refund: { label: '환급', variant: 'accent' },
+    adjustment: { label: '조정', variant: 'default' },
   }
   const c = cfg[type] ?? { label: type, variant: 'default' as const }
   return <Badge variant={c.variant}>{c.label}</Badge>
@@ -139,7 +156,7 @@ export function LossBordereauTable({ rows, onSelect }: LossTableProps) {
           </tr>
         </thead>
         <tbody>
-          {rows.map(row => (
+          {rows.map((row) => (
             <tr
               key={row.id}
               onClick={() => onSelect?.(row)}
@@ -151,10 +168,18 @@ export function LossBordereauTable({ rows, onSelect }: LossTableProps) {
               <td className="px-3 py-2 font-mono text-xs">{row.period_yyyyqn}</td>
               <td className="px-3 py-2 font-mono">{row.claim_no}</td>
               <td className="px-3 py-2 whitespace-nowrap">{row.loss_date}</td>
-              <td className="px-3 py-2 text-right font-mono">{fmtNum(row.paid_amount, row.currency)}</td>
-              <td className="px-3 py-2 text-right font-mono">{fmtNum(row.os_reserve, row.currency)}</td>
-              <td className="px-3 py-2 text-right font-mono">{(row.cession_pct * 100).toFixed(2)}%</td>
-              <td className="px-3 py-2 text-right font-mono font-semibold">{fmtNum(row.recoverable_amount, row.currency)}</td>
+              <td className="px-3 py-2 text-right font-mono">
+                {fmtNum(row.paid_amount, row.currency)}
+              </td>
+              <td className="px-3 py-2 text-right font-mono">
+                {fmtNum(row.os_reserve, row.currency)}
+              </td>
+              <td className="px-3 py-2 text-right font-mono">
+                {(row.cession_pct * 100).toFixed(2)}%
+              </td>
+              <td className="px-3 py-2 text-right font-mono font-semibold">
+                {fmtNum(row.recoverable_amount, row.currency)}
+              </td>
               <td className="px-3 py-2">
                 {row.is_cash_loss ? (
                   <span className="inline-flex items-center rounded border border-warning-urgent/30 bg-warning-urgent/10 px-1.5 py-0.5 text-[10px] font-medium text-warning-urgent">
@@ -180,14 +205,22 @@ export function LossBordereauTable({ rows, onSelect }: LossTableProps) {
 
 function LossStatusBadge({ status }: { status: string }) {
   const cfg: Record<string, { label: string; cls: string }> = {
-    in_progress: { label: '진행중',    cls: 'border-primary/30 bg-primary/10 text-primary' },
-    paid:        { label: '지급완료',  cls: 'border-success/30 bg-success/10 text-success' },
-    closed:      { label: '종결',      cls: 'border-border bg-surface-elevated text-[var(--text-muted)]' },
-    denied:      { label: '거절',      cls: 'border-destructive/30 bg-destructive/10 text-destructive' },
+    in_progress: { label: '진행중', cls: 'border-primary/30 bg-primary/10 text-primary' },
+    paid: { label: '지급완료', cls: 'border-success/30 bg-success/10 text-success' },
+    closed: { label: '종결', cls: 'border-border bg-surface-elevated text-[var(--text-muted)]' },
+    denied: { label: '거절', cls: 'border-destructive/30 bg-destructive/10 text-destructive' },
   }
-  const c = cfg[status] ?? { label: status, cls: 'border-border bg-surface-elevated text-[var(--text-muted)]' }
+  const c = cfg[status] ?? {
+    label: status,
+    cls: 'border-border bg-surface-elevated text-[var(--text-muted)]',
+  }
   return (
-    <span className={cn('inline-flex items-center rounded border px-1.5 py-0.5 text-[10px] font-medium', c.cls)}>
+    <span
+      className={cn(
+        'inline-flex items-center rounded border px-1.5 py-0.5 text-[10px] font-medium',
+        c.cls
+      )}
+    >
       {c.label}
     </span>
   )

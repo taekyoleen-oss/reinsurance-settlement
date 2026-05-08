@@ -1,118 +1,189 @@
-// 도메인 타입 re-export
-export type {
-  // 열거형
-  UserRole,
-  ACStatus,
-  TransactionType,
-  PeriodType,
-  TransactionStatus,
-  TransactionDirection,
-  AllocationType,
-  ContractType,
-  TreatyType,
-  ClassOfBusiness,
-  ContractStatus,
-  CompanyType,
-  ACDirection,
-  SettlementType,
-  MatchStatus,
-  ReconciliationStatus,
-  RateType,
-  TokenTargetType,
-  TokenAction,
-  UnderwritingBasis,
-  ReserveReleaseTiming,
-  BordereauEntryType,
-  LossStatus,
-  ValidationStatus,
-  AttachmentEntityType,
+import type { Database, Tables, TablesInsert, TablesUpdate } from './database'
 
-  // Row 타입
-  CurrencyRow,
-  CounterpartyRow,
-  ContractRow,
-  ContractWithCedantRow,
-  ContractCedantSummary,
-  ContractShareRow,
-  UserProfileRow,
-  ExchangeRateRow,
-  TransactionRow,
-  AccountCurrentRow,
-  AccountCurrentItemRow,
-  SettlementRow,
-  SettlementMatchRow,
-  ReconciliationItemRow,
-  ShareTokenRow,
-  ShareTokenLogRow,
-  PremiumBordereauRow,
-  LossBordereauRow,
-  AttachmentRow,
+// ─── Row types ────────────────────────────────────────────────
+export type CurrencyRow = Tables<'rs_currencies'>
+export type CounterpartyRow = Tables<'rs_counterparties'>
+export type ContractRow = Tables<'rs_contracts'>
+export type ContractShareRow = Tables<'rs_contract_shares'>
+export type UserProfileRow = Tables<'rs_user_profiles'>
+export type ExchangeRateRow = Tables<'rs_exchange_rates'>
+export type TransactionRow = Tables<'rs_transactions'>
+export type AccountCurrentRow = Tables<'rs_account_currents'>
+export type AccountCurrentItemRow = Tables<'rs_account_current_items'>
+export type SettlementRow = Tables<'rs_settlements'>
+export type SettlementMatchRow = Tables<'rs_settlement_matches'>
+export type ReconciliationItemRow = Tables<'rs_reconciliation_items'>
+export type ShareTokenRow = Tables<'rs_share_tokens'>
+export type ShareTokenLogRow = Tables<'rs_share_token_logs'>
+export type PremiumBordereauRow = Tables<'rs_premium_bordereau'>
+export type LossBordereauRow = Tables<'rs_loss_bordereau'>
+// v1.5
+export type ContractSettlementScheduleRow = Tables<'rs_contract_settlement_schedules'>
+export type LossClaimRow = Tables<'rs_loss_claims'>
+export type LossClaimTransactionRow = Tables<'rs_loss_claim_transactions'>
 
-  // Insert 타입
-  CurrencyInsert,
-  CounterpartyInsert,
-  ContractInsert,
-  ContractShareInsert,
-  UserProfileInsert,
-  ExchangeRateInsert,
-  TransactionInsert,
-  AccountCurrentInsert,
-  AccountCurrentItemInsert,
-  SettlementInsert,
-  SettlementMatchInsert,
-  ReconciliationItemInsert,
-  ShareTokenInsert,
-  ShareTokenLogInsert,
-  PremiumBordereauInsert,
-  LossBordereauInsert,
+// Attachment - rs_attachments 미적용이므로 수동 정의
+export type AttachmentEntityType =
+  | 'contract'
+  | 'transaction'
+  | 'account_current'
+  | 'settlement'
+  | 'premium_bordereau'
+  | 'loss_bordereau'
+  | 'bordereau'
 
-  // Update 타입
-  CurrencyUpdate,
-  CounterpartyUpdate,
-  ContractUpdate,
-  ContractShareUpdate,
-  UserProfileUpdate,
-  ExchangeRateUpdate,
-  TransactionUpdate,
-  AccountCurrentUpdate,
-  ReconciliationItemUpdate,
-  ShareTokenUpdate,
-  PremiumBordereauUpdate,
-  LossBordereauUpdate,
+export interface AttachmentRow {
+  id: string
+  entity_type: AttachmentEntityType
+  entity_id: string
+  file_name: string
+  file_path: string
+  file_size: number | null
+  mime_type: string | null
+  note: string | null
+  uploaded_by: string | null
+  created_at: string
+}
 
-  // v1.5 새 타입
-  ScheduleType,
-  ScheduleStatus,
-  ClaimStatus,
-  ClaimTransactionRole,
-  ContractSettlementScheduleRow,
-  ContractSettlementScheduleInsert,
-  ContractSettlementScheduleUpdate,
-  LossClaimRow,
-  LossClaimInsert,
-  LossClaimUpdate,
-  LossClaimTransactionRow,
-  LossClaimTransactionInsert,
+// ContractWithCedantRow / ContractCedantSummary (조인 결과 수동)
+export type ContractWithCedantRow = ContractRow & {
+  cedant?: CounterpartyRow | null
+}
+export type ContractCedantSummary = {
+  cedant_id: string
+  cedant_name: string
+}
 
-  // Database 타입 맵
-  Database,
-} from './database'
+// ─── Insert types ─────────────────────────────────────────────
+export type CurrencyInsert = TablesInsert<'rs_currencies'>
+export type CounterpartyInsert = TablesInsert<'rs_counterparties'>
+export type ContractInsert = TablesInsert<'rs_contracts'>
+export type ContractShareInsert = TablesInsert<'rs_contract_shares'>
+export type UserProfileInsert = TablesInsert<'rs_user_profiles'>
+export type ExchangeRateInsert = TablesInsert<'rs_exchange_rates'>
+// transaction_no/ac_no/settlement_no는 DB 트리거가 자동 채번 — Insert 시 optional로 오버라이드
+export type TransactionInsert = Omit<TablesInsert<'rs_transactions'>, 'transaction_no'> & {
+  transaction_no?: string
+}
+export type AccountCurrentInsert = Omit<TablesInsert<'rs_account_currents'>, 'ac_no'> & {
+  ac_no?: string
+}
+export type AccountCurrentItemInsert = TablesInsert<'rs_account_current_items'>
+export type SettlementInsert = Omit<TablesInsert<'rs_settlements'>, 'settlement_no'> & {
+  settlement_no?: string
+}
+export type SettlementMatchInsert = TablesInsert<'rs_settlement_matches'>
+export type ReconciliationItemInsert = TablesInsert<'rs_reconciliation_items'>
+export type ShareTokenInsert = TablesInsert<'rs_share_tokens'>
+export type ShareTokenLogInsert = TablesInsert<'rs_share_token_logs'>
+export type PremiumBordereauInsert = TablesInsert<'rs_premium_bordereau'>
+export type LossBordereauInsert = TablesInsert<'rs_loss_bordereau'>
+// v1.5
+export type ContractSettlementScheduleInsert = TablesInsert<'rs_contract_settlement_schedules'>
+export type LossClaimInsert = TablesInsert<'rs_loss_claims'>
+export type LossClaimTransactionInsert = TablesInsert<'rs_loss_claim_transactions'>
+
+// ─── Update types ─────────────────────────────────────────────
+export type CurrencyUpdate = TablesUpdate<'rs_currencies'>
+export type CounterpartyUpdate = TablesUpdate<'rs_counterparties'>
+export type ContractUpdate = TablesUpdate<'rs_contracts'>
+export type ContractShareUpdate = TablesUpdate<'rs_contract_shares'>
+export type UserProfileUpdate = TablesUpdate<'rs_user_profiles'>
+export type ExchangeRateUpdate = TablesUpdate<'rs_exchange_rates'>
+export type TransactionUpdate = TablesUpdate<'rs_transactions'>
+export type AccountCurrentUpdate = TablesUpdate<'rs_account_currents'>
+export type ReconciliationItemUpdate = TablesUpdate<'rs_reconciliation_items'>
+export type ShareTokenUpdate = TablesUpdate<'rs_share_tokens'>
+export type PremiumBordereauUpdate = TablesUpdate<'rs_premium_bordereau'>
+export type LossBordereauUpdate = TablesUpdate<'rs_loss_bordereau'>
+// v1.5
+export type ContractSettlementScheduleUpdate = TablesUpdate<'rs_contract_settlement_schedules'>
+export type LossClaimUpdate = TablesUpdate<'rs_loss_claims'>
+
+// ─── Database re-export ───────────────────────────────────────
+export type { Database }
+
+// ─── Enum types (DB는 text 컬럼 사용 — 수동 정의) ────────────
+export type UserRole =
+  | 'broker_technician'
+  | 'broker_manager'
+  | 'reviewer'
+  | 'cedant_viewer'
+  | 'reinsurer_viewer'
+  | 'admin'
+export type ACStatus =
+  | 'draft'
+  | 'pending_approval'
+  | 'approved'
+  | 'reviewed'
+  | 'issued'
+  | 'acknowledged'
+  | 'disputed'
+  | 'cancelled'
+export type TransactionType =
+  | 'premium'
+  | 'claim'
+  | 'commission'
+  | 'adjustment'
+  | 'deposit_premium'
+  | 'profit_commission'
+  | 'sliding_scale'
+export type PeriodType = 'monthly' | 'quarterly' | 'semiannual' | 'annual' | 'adhoc'
+export type TransactionStatus = 'draft' | 'confirmed' | 'cancelled' | 'billed' | 'settled'
+export type TransactionDirection = 'to_reinsurer' | 'to_cedant'
+export type AllocationType = 'proportional' | 'manual'
+export type ContractType = 'proportional' | 'non_proportional'
+export type TreatyType = 'quota_share' | 'surplus' | 'excess_of_loss' | 'stop_loss' | 'aggregate'
+export type ClassOfBusiness =
+  | 'fire'
+  | 'marine'
+  | 'casualty'
+  | 'engineering'
+  | 'life'
+  | 'health'
+  | 'motor'
+  | 'aviation'
+  | 'misc'
+export type ContractStatus = 'active' | 'expired' | 'cancelled' | 'suspended'
+export type CompanyType = 'cedant' | 'reinsurer' | 'broker'
+export type ACDirection = 'to_reinsurer' | 'to_cedant'
+export type SettlementType = 'receipt' | 'payment'
+export type MatchStatus = 'unmatched' | 'partial' | 'fully_matched'
+export type ReconciliationStatus =
+  | 'open'
+  | 'agreed'
+  | 'disputed'
+  | 'waived'
+  | 'matched'
+  | 'unmatched'
+export type RateType = 'spot' | 'monthly_avg' | 'custom'
+export type TokenTargetType = 'account_current' | 'contract'
+export type TokenAction = 'view' | 'acknowledge' | 'comment'
+export type UnderwritingBasis = 'risk_attaching' | 'losses_occurring' | 'claims_made'
+export type ReserveReleaseTiming = 'immediate' | 'end_of_year' | 'run_off'
+export type BordereauEntryType = 'new' | 'endorsement' | 'cancellation' | 'reinstatement'
+export type LossStatus = 'open' | 'closed' | 'reopened'
+export type ValidationStatus = 'pending' | 'valid' | 'invalid' | 'override'
+// v1.5
+export type ScheduleType = 'premium' | 'loss' | 'commission'
+export type ScheduleStatus = 'open' | 'in_progress' | 'closed' | 'cancelled'
+export type ClaimStatus =
+  | 'open'
+  | 'collecting'
+  | 'ready_to_pay'
+  | 'paying'
+  | 'closed'
+  | 'disputed'
+  | 'cancelled'
+export type ClaimTransactionRole =
+  | 'receipt_from_reinsurer'
+  | 'payment_to_cedant'
+  | 'recovery'
+  | 'adjustment'
 
 // ─────────────────────────────────────────────
 // 도메인 복합 타입 (UI/API 레이어용)
 // ─────────────────────────────────────────────
-
-import type {
-  TransactionRow,
-  AccountCurrentRow,
-  ContractRow,
-  CounterpartyRow,
-  SettlementRow,
-  ContractShareRow,
-  ReconciliationItemRow,
-  PremiumBordereauRow,
-  LossBordereauRow,
-} from './database'
 
 /** 거래 + 계약/거래상대방 조인 */
 export interface TransactionWithRelations extends TransactionRow {

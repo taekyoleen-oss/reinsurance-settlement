@@ -8,7 +8,7 @@ import { AccountCurrentViewer } from '@/components/account-currents/AccountCurre
 import { ApprovalStepper } from '@/components/account-currents/ApprovalStepper'
 import { StatusBadge } from '@/components/shared/StatusBadge'
 import { CheckCircle, Download } from 'lucide-react'
-import type { AccountCurrentRow, AccountCurrentItemRow } from '@/types'
+import type { AccountCurrentRow, AccountCurrentItemRow, ACStatus } from '@/types'
 
 export default function ExternalACDetailPage() {
   const { id } = useParams<{ id: string }>()
@@ -21,13 +21,17 @@ export default function ExternalACDetailPage() {
   useEffect(() => {
     Promise.all([
       fetch(`/api/account-currents/${id}`).then((r) => r.json()),
-      fetch(`/api/account-currents/${id}/items`).then((r) => r.json()).catch(() => ({ data: [] })),
-    ]).then(([acd, itemsd]) => {
-      const data = acd.data ?? acd
-      setAc(data)
-      setItems(itemsd.data ?? [])
-      setAcknowledged(data?.status === 'acknowledged')
-    }).catch(() => {})
+      fetch(`/api/account-currents/${id}/items`)
+        .then((r) => r.json())
+        .catch(() => ({ data: [] })),
+    ])
+      .then(([acd, itemsd]) => {
+        const data = acd.data ?? acd
+        setAc(data)
+        setItems(itemsd.data ?? [])
+        setAcknowledged(data?.status === 'acknowledged')
+      })
+      .catch(() => {})
       .finally(() => setLoading(false))
   }, [id])
 
@@ -39,7 +43,7 @@ export default function ExternalACDetailPage() {
       if (!res.ok) throw new Error(data.error ?? '수신확인 실패')
       toast.success('수신확인이 완료되었습니다.')
       setAcknowledged(true)
-      setAc((prev) => prev ? { ...prev, status: 'acknowledged' as any } : prev)
+      setAc((prev: AccountCurrentRow | null) => (prev ? { ...prev, status: 'acknowledged' } : prev))
     } catch (err) {
       toast.error(err instanceof Error ? err.message : String(err))
     } finally {
@@ -48,10 +52,18 @@ export default function ExternalACDetailPage() {
   }
 
   if (loading) {
-    return <div className="p-12 text-center text-sm text-[var(--text-muted)] animate-pulse">로딩 중...</div>
+    return (
+      <div className="p-12 text-center text-sm text-[var(--text-muted)] animate-pulse">
+        로딩 중...
+      </div>
+    )
   }
   if (!ac) {
-    return <div className="p-12 text-center text-sm text-[var(--text-muted)]">정산서를 찾을 수 없습니다.</div>
+    return (
+      <div className="p-12 text-center text-sm text-[var(--text-muted)]">
+        정산서를 찾을 수 없습니다.
+      </div>
+    )
   }
 
   return (
@@ -66,7 +78,7 @@ export default function ExternalACDetailPage() {
           </p>
         </div>
         <div className="flex items-center gap-3">
-          <StatusBadge status={ac.status} />
+          <StatusBadge status={ac.status as ACStatus} />
           <Button variant="default" size="sm" onClick={() => window.print()}>
             <Download className="h-4 w-4 mr-1" />
             PDF
@@ -86,7 +98,7 @@ export default function ExternalACDetailPage() {
         </div>
       </div>
 
-      <ApprovalStepper currentStatus={ac.status} />
+      <ApprovalStepper currentStatus={ac.status as ACStatus} />
       <AccountCurrentViewer ac={ac} items={items} />
     </div>
   )

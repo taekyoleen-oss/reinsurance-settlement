@@ -1,5 +1,5 @@
 import { createClient } from '@/lib/supabase/server'
-import type { TransactionRow, TransactionInsert, TransactionUpdate } from '@/types/database'
+import type { TransactionRow, TransactionInsert, TransactionUpdate } from '@/types'
 import { validateExchangeRate } from '@/lib/utils/exchange-rate'
 import type { PaginationParams, PagedResult } from './types'
 
@@ -24,6 +24,7 @@ export async function getTransactions(
 ): Promise<PagedResult<TransactionRow>> {
   const supabase = await createClient()
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   let query = (supabase as any)
     .from('rs_transactions')
     .select('*', { count: 'exact' })
@@ -31,11 +32,11 @@ export async function getTransactions(
     .order('created_at', { ascending: false })
 
   if (filters.counterpartyId) query = query.eq('counterparty_id', filters.counterpartyId)
-  if (filters.contractId)     query = query.eq('contract_id', filters.contractId)
-  if (filters.status)         query = query.eq('status', filters.status)
+  if (filters.contractId) query = query.eq('contract_id', filters.contractId)
+  if (filters.status) query = query.eq('status', filters.status)
   if (filters.transactionType) query = query.eq('transaction_type', filters.transactionType)
-  if (filters.dateFrom)       query = query.gte('transaction_date', filters.dateFrom)
-  if (filters.dateTo)         query = query.lte('transaction_date', filters.dateTo)
+  if (filters.dateFrom) query = query.gte('transaction_date', filters.dateFrom)
+  if (filters.dateTo) query = query.lte('transaction_date', filters.dateTo)
 
   const showDeleted = filters.isDeleted === true
   if (!showDeleted) query = query.eq('is_deleted', false)
@@ -47,7 +48,7 @@ export async function getTransactions(
 
   const { data, count, error } = await query
   if (error) throw error
-  return { data: data ?? [], total: count ?? (data?.length ?? 0) }
+  return { data: data ?? [], total: count ?? data?.length ?? 0 }
 }
 
 /**
@@ -57,14 +58,13 @@ export async function createTransaction(
   data: Omit<TransactionInsert, 'exchange_rate' | 'amount_krw'>
 ): Promise<TransactionRow> {
   const supabase = await createClient()
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const db = supabase as any
 
   const transactionDate = new Date(data.transaction_date)
   const rate = await validateExchangeRate(data.currency_code, transactionDate)
   const amount_krw =
-    data.currency_code === 'KRW'
-      ? data.amount_original
-      : Math.round(data.amount_original * rate)
+    data.currency_code === 'KRW' ? data.amount_original : Math.round(data.amount_original * rate)
 
   const { data: tx, error } = await db
     .from('rs_transactions')
@@ -88,6 +88,7 @@ export async function updateTransaction(
   updates: TransactionUpdate
 ): Promise<TransactionRow> {
   const supabase = await createClient()
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const db = supabase as any
 
   // 잠금 여부 확인
@@ -129,8 +130,7 @@ export async function updateTransaction(
       finalUpdates = {
         ...finalUpdates,
         exchange_rate: rate,
-        amount_krw:
-          currencyCode === 'KRW' ? amount : Math.round(amount * rate),
+        amount_krw: currencyCode === 'KRW' ? amount : Math.round(amount * rate),
       }
     }
   }
@@ -149,11 +149,9 @@ export async function updateTransaction(
 /**
  * 거래 소프트 삭제
  */
-export async function softDeleteTransaction(
-  id: string,
-  deletedBy: string
-): Promise<void> {
+export async function softDeleteTransaction(id: string, deletedBy: string): Promise<void> {
   const supabase = await createClient()
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const db = supabase as any
 
   const { data: existingData } = await db
@@ -188,11 +186,7 @@ export async function softDeleteTransaction(
 export async function getTransactionById(id: string): Promise<TransactionRow | null> {
   const supabase = await createClient()
 
-  const { data, error } = await supabase
-    .from('rs_transactions')
-    .select('*')
-    .eq('id', id)
-    .single()
+  const { data, error } = await supabase.from('rs_transactions').select('*').eq('id', id).single()
 
   if (error) return null
   return data
