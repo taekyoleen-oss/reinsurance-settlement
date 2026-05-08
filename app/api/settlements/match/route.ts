@@ -7,7 +7,7 @@ import { SettlementMatchSchema } from '@/lib/api/schemas/settlement'
 export const POST = withBrokerSchema(SettlementMatchSchema, async (body, { user }) => {
   const match = await matchSettlement(
     body.settlement_id,
-    body.ac_id,
+    body.account_current_id,
     body.matched_amount,
     user.id,
     body.tx_id ?? undefined

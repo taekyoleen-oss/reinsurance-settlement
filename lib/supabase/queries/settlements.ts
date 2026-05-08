@@ -22,16 +22,17 @@ export async function getSettlements(
 ): Promise<PagedResult<SettlementRow>> {
   const supabase = await createClient()
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   let query = (supabase as any)
     .from('rs_settlements')
     .select('*', { count: 'exact' })
     .order('settlement_date', { ascending: false })
 
   if (filters.counterpartyId) query = query.eq('counterparty_id', filters.counterpartyId)
-  if (filters.currencyCode)   query = query.eq('currency_code', filters.currencyCode)
-  if (filters.matchStatus)    query = query.eq('match_status', filters.matchStatus)
-  if (filters.dateFrom)       query = query.gte('settlement_date', filters.dateFrom)
-  if (filters.dateTo)         query = query.lte('settlement_date', filters.dateTo)
+  if (filters.currencyCode) query = query.eq('currency_code', filters.currencyCode)
+  if (filters.matchStatus) query = query.eq('match_status', filters.matchStatus)
+  if (filters.dateFrom) query = query.gte('settlement_date', filters.dateFrom)
+  if (filters.dateTo) query = query.lte('settlement_date', filters.dateTo)
 
   if (pagination) {
     const from = (pagination.page - 1) * pagination.pageSize
@@ -40,7 +41,7 @@ export async function getSettlements(
 
   const { data, count, error } = await query
   if (error) throw error
-  return { data: data ?? [], total: count ?? (data?.length ?? 0) }
+  return { data: data ?? [], total: count ?? data?.length ?? 0 }
 }
 
 /**
@@ -48,11 +49,7 @@ export async function getSettlements(
  */
 export async function getSettlementById(id: string): Promise<SettlementRow | null> {
   const supabase = await createClient()
-  const { data, error } = await supabase
-    .from('rs_settlements')
-    .select('*')
-    .eq('id', id)
-    .single()
+  const { data, error } = await supabase.from('rs_settlements').select('*').eq('id', id).single()
   if (error) return null
   return data
 }
@@ -60,10 +57,9 @@ export async function getSettlementById(id: string): Promise<SettlementRow | nul
 /**
  * 결제 등록
  */
-export async function createSettlement(
-  data: SettlementInsert
-): Promise<SettlementRow> {
+export async function createSettlement(data: SettlementInsert): Promise<SettlementRow> {
   const supabase = await createClient()
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const db = supabase as any
 
   const settlementDate = new Date(data.settlement_date)
@@ -72,8 +68,7 @@ export async function createSettlement(
     data.exchange_rate != null && Number(data.exchange_rate) > 0
       ? Number(data.exchange_rate)
       : await validateExchangeRate(data.currency_code, settlementDate)
-  const amount_krw =
-    data.currency_code === 'KRW' ? amount : Math.round(amount * rate)
+  const amount_krw = data.currency_code === 'KRW' ? amount : Math.round(amount * rate)
 
   const { data: settlement, error } = await db
     .from('rs_settlements')
@@ -109,6 +104,7 @@ export async function matchSettlement(
   txId?: string
 ): Promise<SettlementMatchRow> {
   const supabase = await createClient()
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const db = supabase as any
 
   // 결제 현황 조회
@@ -133,7 +129,7 @@ export async function matchSettlement(
     .from('rs_settlement_matches')
     .insert({
       settlement_id: settlementId,
-      ac_id: acId,
+      account_current_id: acId,
       tx_id: txId ?? null,
       matched_amount: matchedAmount,
       created_by: createdBy,

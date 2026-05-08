@@ -32,8 +32,7 @@ function SettlementItem({ settlement }: SettlementItemProps) {
     collect: (monitor) => ({ isDragging: monitor.isDragging() }),
   })
 
-  const fmt = (n: number) =>
-    new Intl.NumberFormat('en-US', { minimumFractionDigits: 2 }).format(n)
+  const fmt = (n: number) => new Intl.NumberFormat('en-US', { minimumFractionDigits: 2 }).format(n)
 
   return (
     <div
@@ -43,7 +42,9 @@ function SettlementItem({ settlement }: SettlementItemProps) {
       }`}
     >
       <div className="flex items-center justify-between mb-1">
-        <span className="font-mono text-xs text-[var(--text-secondary)]">{settlement.settlement_no}</span>
+        <span className="font-mono text-xs text-[var(--text-secondary)]">
+          {settlement.settlement_no}
+        </span>
         <Badge variant={settlement.settlement_type === 'receipt' ? 'success' : 'destructive'}>
           {settlement.settlement_type === 'receipt' ? '입금' : '출금'}
         </Badge>
@@ -70,8 +71,7 @@ function ACDropTarget({ ac, onDrop }: ACDropTargetProps) {
     collect: (monitor) => ({ isOver: monitor.isOver() }),
   })
 
-  const fmt = (n: number) =>
-    new Intl.NumberFormat('en-US', { minimumFractionDigits: 2 }).format(n)
+  const fmt = (n: number) => new Intl.NumberFormat('en-US', { minimumFractionDigits: 2 }).format(n)
 
   return (
     <div
@@ -89,9 +89,7 @@ function ACDropTarget({ ac, onDrop }: ACDropTargetProps) {
       <div className="font-mono text-sm font-semibold text-[var(--text-number)]">
         {fmt(ac.net_balance)} {ac.currency_code}
       </div>
-      {isOver && (
-        <p className="text-xs text-primary mt-1">여기에 드롭하여 매칭</p>
-      )}
+      {isOver && <p className="text-xs text-primary mt-1">여기에 드롭하여 매칭</p>}
     </div>
   )
 }
@@ -118,10 +116,14 @@ export function SettlementMatchPanel() {
       .catch(() => {})
   }, [])
 
-  useEffect(() => { loadData() }, [loadData])
+  useEffect(() => {
+    loadData()
+  }, [loadData])
 
   const handleDrop = (settlement: SettlementRow, ac: AccountCurrentRow) => {
-    setMatchAmount(String(Math.min(settlement.amount - settlement.matched_amount, Math.abs(ac.net_balance))))
+    setMatchAmount(
+      String(Math.min(settlement.amount - settlement.matched_amount, Math.abs(ac.net_balance)))
+    )
     setMatchDialog({ settlement, ac })
   }
 
@@ -134,7 +136,7 @@ export function SettlementMatchPanel() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           settlement_id: matchDialog.settlement.id,
-          ac_id: matchDialog.ac.id,
+          account_current_id: matchDialog.ac.id,
           matched_amount: parseFloat(matchAmount),
         }),
       })
@@ -175,7 +177,9 @@ export function SettlementMatchPanel() {
           </CardHeader>
           <CardContent className="space-y-3">
             {acs.length === 0 ? (
-              <p className="text-sm text-[var(--text-muted)] text-center py-4">발행된 정산서 없음</p>
+              <p className="text-sm text-[var(--text-muted)] text-center py-4">
+                발행된 정산서 없음
+              </p>
             ) : (
               acs.map((ac) => <ACDropTarget key={ac.id} ac={ac} onDrop={handleDrop} />)
             )}
@@ -195,7 +199,8 @@ export function SettlementMatchPanel() {
                   <p className="text-xs text-[var(--text-muted)] mb-1">결제</p>
                   <p className="font-mono font-semibold">{matchDialog.settlement.settlement_no}</p>
                   <p className="font-mono text-[var(--text-number)]">
-                    {matchDialog.settlement.amount.toLocaleString()} {matchDialog.settlement.currency_code}
+                    {matchDialog.settlement.amount.toLocaleString()}{' '}
+                    {matchDialog.settlement.currency_code}
                   </p>
                 </div>
                 <div className="rounded border border-border bg-surface p-3">
@@ -218,7 +223,9 @@ export function SettlementMatchPanel() {
             </div>
           )}
           <DialogFooter>
-            <Button variant="outline" onClick={() => setMatchDialog(null)}>취소</Button>
+            <Button variant="outline" onClick={() => setMatchDialog(null)}>
+              취소
+            </Button>
             <Button onClick={handleMatch} disabled={saving || !matchAmount}>
               {saving ? '처리 중...' : '매칭 확정'}
             </Button>
