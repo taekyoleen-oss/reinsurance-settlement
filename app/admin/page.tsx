@@ -48,7 +48,7 @@ interface ShareToken {
   target_id: string
   created_at: string
   expires_at: string
-  is_active: boolean
+  revoked: boolean
   notes?: string
 }
 
@@ -75,7 +75,7 @@ const ROLE_KEYS = Object.keys(ROLE_LABELS)
 const EMPTY_USER_FORM = {
   email: '',
   password: '',
-  display_name: '',
+  full_name: '',
   role: 'broker_technician',
 }
 
@@ -98,7 +98,7 @@ export default function AdminPage() {
     Promise.all([
       fetch('/api/admin/users')
         .then((r) => r.json())
-        .catch(() => ({ data: [] })),
+        .catch(() => ({ users: [] })),
       fetch('/api/admin/share-tokens')
         .then((r) => r.json())
         .catch(() => ({ data: [] })),
@@ -107,7 +107,7 @@ export default function AdminPage() {
         .catch(() => ({ data: [] })),
     ])
       .then(([ud, td, cd]) => {
-        setUsers(ud.data ?? [])
+        setUsers(ud.users ?? [])
         setTokens(td.data ?? [])
         setCurrencies(cd.data ?? [])
       })
@@ -130,9 +130,13 @@ export default function AdminPage() {
       const data = await res.json()
       if (!res.ok) throw new Error(data.error ?? '등록 실패')
       toast.success('사용자가 등록되었습니다.')
-      setUsers((u) => [data.data, ...u])
       setShowUserModal(false)
       setUserForm(EMPTY_USER_FORM)
+      // Refresh user list
+      fetch('/api/admin/users')
+        .then((r) => r.json())
+        .then((d) => setUsers(d.users ?? []))
+        .catch(() => {})
     } catch (err) {
       toast.error(err instanceof Error ? err.message : String(err))
     } finally {
@@ -373,16 +377,16 @@ export default function AdminPage() {
                         <TableCell>
                           <Badge
                             variant={
-                              tk.is_active && new Date(tk.expires_at) > new Date()
+                              !tk.revoked && new Date(tk.expires_at) > new Date()
                                 ? 'success'
                                 : 'muted'
                             }
                           >
-                            {tk.is_active && new Date(tk.expires_at) > new Date() ? '유효' : '만료'}
+                            {!tk.revoked && new Date(tk.expires_at) > new Date() ? '유효' : '만료'}
                           </Badge>
                         </TableCell>
                         <TableCell className="text-right">
-                          {tk.is_active && (
+                          {!tk.revoked && (
                             <Button
                               size="sm"
                               variant="destructive"
@@ -560,8 +564,8 @@ export default function AdminPage() {
             <div className="space-y-1.5">
               <Label>이름(표시명)</Label>
               <Input
-                value={userForm.display_name}
-                onChange={(e) => setUserForm((f) => ({ ...f, display_name: e.target.value }))}
+                value={userForm.full_name}
+                onChange={(e) => setUserForm((f) => ({ ...f, full_name: e.target.value }))}
                 placeholder="홍길동"
               />
             </div>

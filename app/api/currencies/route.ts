@@ -6,8 +6,8 @@ import { z } from 'zod'
 const CreateSchema = z.object({
   code: z.string().length(3).toUpperCase(),
   name_ko: z.string().min(1),
-  name_en: z.string().min(1),
-  symbol: z.string().min(1),
+  name_en: z.string().optional().default(''),
+  symbol: z.string().optional().default(''),
   decimal_digits: z.number().int().min(0).max(4).default(2),
   display_order: z.number().int().optional(),
 })
