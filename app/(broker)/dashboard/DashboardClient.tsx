@@ -6,6 +6,7 @@ import { AgingAnalysisTable } from '@/components/dashboard/AgingAnalysisTable'
 import { ExchangeRatePanel } from '@/components/dashboard/ExchangeRatePanel'
 import { OutstandingSummaryCard } from '@/components/dashboard/OutstandingSummaryCard'
 import { AgingMiniBar } from '@/components/dashboard/AgingMiniBar'
+import { PremiumAlertCard } from '@/components/dashboard/PremiumAlertCard'
 
 type Direction = 'receivable' | 'payable'
 interface Selection {
@@ -24,10 +25,11 @@ export function DashboardClient() {
 
   return (
     <div className="space-y-4">
-      {/* 상단: 환율 + KRW 환산 미청산 */}
-      <div className="grid grid-cols-1 gap-4 xl:grid-cols-2">
+      {/* 상단: 환율 + KRW 환산 미청산 + 보험료 수령 현황 */}
+      <div className="grid grid-cols-1 gap-4 xl:grid-cols-3">
         <ExchangeRatePanel />
         <OutstandingSummaryCard />
+        <PremiumAlertCard />
       </div>
 
       {/* 통화별 미청산 KPI + Aging mini bar */}

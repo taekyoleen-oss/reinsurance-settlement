@@ -23,12 +23,28 @@ import {
 } from '@/components/ui/table'
 import { Badge } from '@/components/ui/badge'
 import { TableExportButton } from '@/components/shared/TableExportButton'
-import { ClipboardList, Plus } from 'lucide-react'
+import { AlertTriangle, ClipboardList, Plus, TrendingDown } from 'lucide-react'
 import { CedantFilterSelect } from '@/components/contracts/CedantFilterSelect'
 import type { ContractWithCedantRow } from '@/types'
+import type { ContractPremiumStatus } from '@/app/api/contracts/premium-summary/route'
 
 const STATUS_LABELS: Record<string, string> = { active: '활성', expired: '만료', cancelled: '취소' }
 const TYPE_LABELS: Record<string, string> = { treaty: 'Treaty', facultative: 'Facultative' }
+
+const PREMIUM_STATUS_CONFIG: Record<
+  string,
+  {
+    label: string
+    variant: 'destructive' | 'warning' | 'default' | 'success'
+    icon?: React.ElementType
+  }
+> = {
+  overdue: { label: '연체', variant: 'destructive', icon: AlertTriangle },
+  overdue_partial: { label: '부분연체', variant: 'destructive', icon: AlertTriangle },
+  partially_received: { label: '부분수령', variant: 'warning', icon: TrendingDown },
+  pending: { label: '대기중', variant: 'default' },
+  fully_received: { label: '완납', variant: 'success' },
+}
 
 const fetcher = async (url: string) => {
   const r = await fetch(url)
@@ -64,6 +80,19 @@ export default function ContractsPage() {
     isLoading,
     error,
   } = useSWR<ContractWithCedantRow[]>(contractsUrl, fetcher, { revalidateOnFocus: false })
+
+  const { data: premiumSummaryData } = useSWR<{ data: ContractPremiumStatus[] }>(
+    '/api/contracts/premium-summary',
+    fetcher,
+    { revalidateOnFocus: false }
+  )
+  const premiumStatusMap = useMemo(() => {
+    const map = new Map<string, ContractPremiumStatus>()
+    for (const item of premiumSummaryData?.data ?? []) {
+      map.set(item.contract_id, item)
+    }
+    return map
+  }, [premiumSummaryData])
 
   return (
     <div className="space-y-4">
@@ -145,16 +174,32 @@ export default function ContractsPage() {
         <div className="space-y-2">
           <div className="flex justify-end">
             <TableExportButton
-              headers={['계약번호', '유형', '출재사', '개시일', '만기일', '정산통화', '상태']}
-              rows={contracts.map((c) => [
-                c.contract_no,
-                TYPE_LABELS[c.contract_type] ?? c.contract_type,
-                c.cedant?.company_name_ko ?? '',
-                format(new Date(c.inception_date), 'yyyy-MM-dd'),
-                c.expiry_date ? format(new Date(c.expiry_date), 'yyyy-MM-dd') : '',
-                c.settlement_currency,
-                STATUS_LABELS[c.status] ?? c.status,
-              ])}
+              headers={[
+                '계약번호',
+                '유형',
+                '출재사',
+                '개시일',
+                '만기일',
+                '정산통화',
+                '계약상태',
+                '보험료 수령',
+              ]}
+              rows={contracts.map((c) => {
+                const ps = premiumStatusMap.get(c.id)
+                const premLabel = ps
+                  ? (PREMIUM_STATUS_CONFIG[ps.worst_status]?.label ?? ps.worst_status)
+                  : '—'
+                return [
+                  c.contract_no,
+                  TYPE_LABELS[c.contract_type] ?? c.contract_type,
+                  c.cedant?.company_name_ko ?? '',
+                  format(new Date(c.inception_date), 'yyyy-MM-dd'),
+                  c.expiry_date ? format(new Date(c.expiry_date), 'yyyy-MM-dd') : '',
+                  c.settlement_currency,
+                  STATUS_LABELS[c.status] ?? c.status,
+                  premLabel,
+                ]
+              })}
               filename="계약목록"
             />
           </div>
@@ -168,7 +213,8 @@ export default function ContractsPage() {
                 <TableHead>개시일</TableHead>
                 <TableHead>만기일</TableHead>
                 <TableHead>정산통화</TableHead>
-                <TableHead>상태</TableHead>
+                <TableHead>계약상태</TableHead>
+                <TableHead>보험료 수령</TableHead>
                 <TableHead className="text-right">액션</TableHead>
               </TableRow>
             </TableHeader>
@@ -216,6 +262,21 @@ export default function ContractsPage() {
                       {STATUS_LABELS[c.status]}
                     </Badge>
                   </TableCell>
+                  <TableCell>
+                    {(() => {
+                      const ps = premiumStatusMap.get(c.id)
+                      if (!ps) return <span className="text-xs text-[var(--text-muted)]">—</span>
+                      const cfg = PREMIUM_STATUS_CONFIG[ps.worst_status]
+                      if (!cfg) return null
+                      const Icon = cfg.icon
+                      return (
+                        <Badge variant={cfg.variant} className="gap-1">
+                          {Icon && <Icon className="h-3 w-3" />}
+                          {cfg.label}
+                        </Badge>
+                      )
+                    })()}
+                  </TableCell>
                   <TableCell className="text-right">
                     <Link href={`/contracts/${c.id}`}>
                       <Button size="sm" variant="ghost">
@@ -227,7 +288,7 @@ export default function ContractsPage() {
               ))}
               {contracts.length === 0 && (
                 <TableRow>
-                  <TableCell colSpan={9} className="text-center text-[var(--text-muted)] py-8">
+                  <TableCell colSpan={10} className="text-center text-[var(--text-muted)] py-8">
                     {filterCedantId ||
                     debouncedSearch ||
                     filterStatus !== 'all' ||

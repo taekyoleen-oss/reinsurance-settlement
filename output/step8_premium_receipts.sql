@@ -148,6 +148,7 @@ CREATE INDEX IF NOT EXISTS idx_premium_receipts_ac
 ALTER TABLE rs_premium_receipts ENABLE ROW LEVEL SECURITY;
 
 -- 브로커 내부 직원 및 관리자: 전체 CRUD
+DROP POLICY IF EXISTS "broker_full_access_premium_receipts" ON rs_premium_receipts;
 CREATE POLICY "broker_full_access_premium_receipts"
   ON rs_premium_receipts FOR ALL TO authenticated
   USING (
@@ -166,6 +167,7 @@ CREATE POLICY "broker_full_access_premium_receipts"
   );
 
 -- 외부 뷰어(출재사/수재사): 자신과 관련된 계약의 수령 내역 읽기 전용
+DROP POLICY IF EXISTS "external_read_premium_receipts" ON rs_premium_receipts;
 CREATE POLICY "external_read_premium_receipts"
   ON rs_premium_receipts FOR SELECT TO authenticated
   USING (
