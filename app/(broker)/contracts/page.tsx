@@ -30,10 +30,12 @@ import type { ContractWithCedantRow } from '@/types'
 const STATUS_LABELS: Record<string, string> = { active: '활성', expired: '만료', cancelled: '취소' }
 const TYPE_LABELS: Record<string, string> = { treaty: 'Treaty', facultative: 'Facultative' }
 
-const fetcher = (url: string) =>
-  fetch(url)
-    .then((r) => r.json())
-    .then((d) => d.data ?? [])
+const fetcher = async (url: string) => {
+  const r = await fetch(url)
+  const json = await r.json()
+  if (!r.ok) throw Object.assign(new Error(json?.error ?? `HTTP ${r.status}`), { status: r.status })
+  return json?.data ?? []
+}
 
 export default function ContractsPage() {
   const [filterStatus, setFilterStatus] = useState('all')
@@ -117,8 +119,21 @@ export default function ContractsPage() {
       </div>
 
       {error && (
-        <div className="rounded border border-warning-urgent/40 bg-warning-urgent/10 px-4 py-3 text-sm text-warning-urgent">
-          계약 목록을 불러오지 못했습니다.
+        <div className="rounded border border-warning-urgent/40 bg-warning-urgent/10 px-4 py-3 text-sm text-warning-urgent space-y-1">
+          <p className="font-medium">계약 목록을 불러오지 못했습니다.</p>
+          {(error as { status?: number }).status === 403 ? (
+            <p className="text-xs opacity-80">
+              권한 없음(403) — Supabase Dashboard에서{' '}
+              <code className="font-mono">rs_user_profiles</code>에 본인 계정 역할이 등록됐는지
+              확인하세요. (
+              <a href="/setup" className="underline">
+                설정 페이지
+              </a>
+              )
+            </p>
+          ) : (
+            <p className="text-xs opacity-80">{(error as Error).message}</p>
+          )}
         </div>
       )}
 

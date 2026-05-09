@@ -1,14 +1,13 @@
 import { NextResponse } from 'next/server'
-import { createClient } from '@/lib/supabase/server'
+import { adminClient } from '@/lib/supabase/admin'
 import { attachCedantSummaries } from '@/lib/supabase/attach-cedant'
 import { withBrokerAuth, withBrokerSchema } from '@/lib/api/handler'
 import { ContractCreateSchema } from '@/lib/api/schemas/contract'
 import type { ContractRow } from '@/types'
 
 export const GET = withBrokerAuth(async (_auth, req) => {
-  const supabase = await createClient()
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const db = supabase as any
+  const db = adminClient as any
   const { searchParams } = new URL(req.url)
   const status = searchParams.get('status')
   const contract_type = searchParams.get('contract_type')
@@ -53,9 +52,8 @@ export const GET = withBrokerAuth(async (_auth, req) => {
 
 // withBrokerSchema: 브로커 역할 인증 + zod 화이트리스트 검증으로 임의 컬럼 주입 방지
 export const POST = withBrokerSchema(ContractCreateSchema, async (body, { user }) => {
-  const supabase = await createClient()
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const db = supabase as any
+  const db = adminClient as any
   const { data, error } = await db
     .from('rs_contracts')
     .insert({ ...body, created_by: user.id })
