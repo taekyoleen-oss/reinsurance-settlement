@@ -49,11 +49,6 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(loginUrl)
   }
 
-  // /setup — 인증된 사용자에게만 허용 (역할 불필요)
-  if (pathname.startsWith('/setup')) {
-    return supabaseResponse
-  }
-
   // 인증된 사용자의 역할 조회
   if (user) {
     const { data: profile } = await supabase
@@ -63,11 +58,6 @@ export async function middleware(request: NextRequest) {
       .single()
 
     const role = profile?.role ?? ''
-
-    // 프로필 없는 사용자 → /setup으로 안내
-    if (!role) {
-      return NextResponse.redirect(new URL('/setup', request.url))
-    }
 
     // /admin/* → admin만
     if (pathname.startsWith('/admin') && role !== 'admin') {
