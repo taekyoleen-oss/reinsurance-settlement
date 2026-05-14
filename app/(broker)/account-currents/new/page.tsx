@@ -6,7 +6,13 @@ import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { CedantFilterSelect } from '@/components/contracts/CedantFilterSelect'
 import { DuplicateACWarningBanner } from '@/components/shared/DuplicateACWarningBanner'
@@ -39,10 +45,19 @@ export default function NewAccountCurrentPage() {
 
   useEffect(() => {
     if (typeof window === 'undefined') return
-    const id = new URLSearchParams(window.location.search).get('contractId')
-    if (id) {
-      setForm((f) => (f.contract_id === id ? f : { ...f, contract_id: id }))
-    }
+    const params = new URLSearchParams(window.location.search)
+    const id = params.get('contractId')
+    const from = params.get('period_from')
+    const to = params.get('period_to')
+    const cpid = params.get('counterparty_id')
+    setForm((f) => {
+      const next = { ...f }
+      if (id && f.contract_id !== id) next.contract_id = id
+      if (from) next.period_from = from
+      if (to) next.period_to = to
+      if (cpid) next.counterparty_id = cpid
+      return next
+    })
   }, [])
 
   useEffect(() => {

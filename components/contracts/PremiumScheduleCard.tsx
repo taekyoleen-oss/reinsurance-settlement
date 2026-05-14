@@ -26,6 +26,7 @@ import {
   CheckCircle2,
   Clock,
   CircleDashed,
+  FileText,
 } from 'lucide-react'
 import { ReceiptConfirmDialog } from './ReceiptConfirmDialog'
 import type {
@@ -548,6 +549,7 @@ export function PremiumScheduleCard({
                   <TableHead className="w-28 text-center">수령 상태</TableHead>
                   <TableHead className="w-28 text-right">저장</TableHead>
                   <TableHead className="w-16 text-center">수령입력</TableHead>
+                  <TableHead className="w-16 text-center">정산서</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -695,12 +697,32 @@ export function PremiumScheduleCard({
                             확인
                           </Button>
                         </TableCell>
+
+                        {/* 정산서(AC) 발행 — 기간 prefilled */}
+                        <TableCell className="text-center">
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            className="h-6 px-2 text-[10px]"
+                            asChild
+                            title="이 기간으로 정산서(AC) 작성 페이지 열기"
+                          >
+                            <a
+                              href={`/account-currents/new?contractId=${encodeURIComponent(
+                                contractId
+                              )}&period_from=${s.period_from}&period_to=${s.period_to}`}
+                            >
+                              <FileText className="h-3 w-3 mr-0.5" />
+                              발행
+                            </a>
+                          </Button>
+                        </TableCell>
                       </TableRow>
 
                       {/* 수령 이력 (펼침) */}
                       {isExpanded && (
                         <TableRow className="bg-[var(--surface-elevated)]">
-                          <TableCell colSpan={10} className="py-2 px-4">
+                          <TableCell colSpan={11} className="py-2 px-4">
                             {receipts.length === 0 ? (
                               <p className="text-xs text-[var(--text-muted)] py-1">
                                 수령 확인 내역이 없습니다. &apos;확인&apos; 버튼으로 추가하세요.
@@ -720,7 +742,8 @@ export function PremiumScheduleCard({
                                       <th className="text-left font-normal pb-1 pl-3">
                                         은행참조번호
                                       </th>
-                                      <th className="text-center font-normal pb-1">연결상태</th>
+                                      <th className="text-left font-normal pb-1 pl-3">연결</th>
+                                      <th className="text-center font-normal pb-1">상태</th>
                                       <th className="w-8" />
                                     </tr>
                                   </thead>
@@ -751,6 +774,29 @@ export function PremiumScheduleCard({
                                         </td>
                                         <td className="py-1 pl-3 font-mono text-[var(--text-muted)]">
                                           {r.bank_reference ?? '–'}
+                                        </td>
+                                        <td className="py-1 pl-3 text-[10px]">
+                                          {r.linked_ac_id ? (
+                                            <a
+                                              href={`/account-currents/${r.linked_ac_id}`}
+                                              className="text-blue-600 hover:underline"
+                                              title="연결된 정산서로 이동"
+                                            >
+                                              AC {r.linked_ac_no ?? r.linked_ac_id.slice(0, 6)}
+                                            </a>
+                                          ) : r.linked_transaction_id ? (
+                                            <a
+                                              href={`/transactions/${r.linked_transaction_id}`}
+                                              className="text-blue-600 hover:underline"
+                                              title="연결된 거래로 이동"
+                                            >
+                                              TX{' '}
+                                              {r.linked_transaction_no ??
+                                                r.linked_transaction_id.slice(0, 6)}
+                                            </a>
+                                          ) : (
+                                            <span className="text-[var(--text-muted)]">–</span>
+                                          )}
                                         </td>
                                         <td className="py-1 text-center">
                                           <Badge
@@ -810,7 +856,7 @@ export function PremiumScheduleCard({
                   <TableCell className="text-right font-mono text-sm text-amber-600">
                     {totalOutstanding > 0 ? totalOutstanding.toLocaleString() : '–'}
                   </TableCell>
-                  <TableCell colSpan={3} />
+                  <TableCell colSpan={4} />
                 </TableRow>
               </TableBody>
             </Table>

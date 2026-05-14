@@ -194,3 +194,96 @@ export async function getUnmatchedReceiptsForContract(
   if (error) throw error
   return data ?? []
 }
+
+/**
+ * 정산서(AC)에 연결된 모든 수령/송금 내역
+ * - linked_ac_id 가 직접 일치하거나
+ * - 같은 계약·거래상대·기간 범위에 들어오는 매칭 후보까지 함께 반환 (matched 플래그)
+ */
+export async function getReceiptsByAC(acId: string): Promise<{
+  linked: PremiumReceiptRow[]
+  candidates: PremiumReceiptRow[]
+  ac_period_from: string
+  ac_period_to: string
+  ac_contract_id: string
+  ac_counterparty_id: string
+}> {
+  const supabase = await createClient()
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const db = supabase as any
+
+  const { data: ac, error: acErr } = await db
+    .from('rs_account_currents')
+    .select('id, contract_id, counterparty_id, period_from, period_to')
+    .eq('id', acId)
+    .single()
+  if (acErr || !ac) throw acErr ?? new Error('AC not found')
+
+  // (1) AC 에 직접 연결된 receipt
+  const { data: linked, error: lErr } = await db
+    .from('rs_premium_receipts')
+    .select(
+      `*, counterparty:rs_counterparties(company_name_ko),
+       linked_transaction:rs_transactions(transaction_no),
+       linked_ac:rs_account_currents(ac_no)`
+    )
+    .eq('linked_ac_id', acId)
+    .order('received_date', { ascending: true })
+  if (lErr) throw lErr
+
+  // (2) 같은 계약·거래상대·기간 범위에 들어오는 미연결 후보
+  const { data: candidates, error: cErr } = await db
+    .from('rs_premium_receipts')
+    .select(
+      `*, counterparty:rs_counterparties(company_name_ko),
+       linked_transaction:rs_transactions(transaction_no),
+       linked_ac:rs_account_currents(ac_no)`
+    )
+    .eq('contract_id', ac.contract_id)
+    .eq('counterparty_id', ac.counterparty_id)
+    .gte('received_date', ac.period_from)
+    .lte('received_date', ac.period_to)
+    .is('linked_ac_id', null)
+    .order('received_date', { ascending: true })
+  if (cErr) throw cErr
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const flatten = (rows: any[]): PremiumReceiptRow[] =>
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (rows ?? []).map((r: any) => ({
+      ...r,
+      counterparty_name: r.counterparty?.company_name_ko ?? null,
+      linked_transaction_no: r.linked_transaction?.transaction_no ?? null,
+      linked_ac_no: r.linked_ac?.ac_no ?? null,
+    }))
+
+  return {
+    linked: flatten(linked),
+    candidates: flatten(candidates),
+    ac_period_from: ac.period_from,
+    ac_period_to: ac.period_to,
+    ac_contract_id: ac.contract_id,
+    ac_counterparty_id: ac.counterparty_id,
+  }
+}
+
+/** 단일 receipt 의 linked_ac_id 갱신 (수동 연결/해제) */
+export async function setReceiptACLink(
+  receiptId: string,
+  acId: string | null
+): Promise<PremiumReceiptRow> {
+  const supabase = await createClient()
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const db = supabase as any
+  const { data, error } = await db
+    .from('rs_premium_receipts')
+    .update({
+      linked_ac_id: acId,
+      match_status: acId ? 'matched' : 'unmatched',
+    })
+    .eq('id', receiptId)
+    .select()
+    .single()
+  if (error) throw error
+  return data as PremiumReceiptRow
+}

@@ -8,6 +8,7 @@ import { StatusBadge } from '@/components/shared/StatusBadge'
 import { AccountCurrentViewer } from '@/components/account-currents/AccountCurrentViewer'
 import { ApprovalStepper } from '@/components/account-currents/ApprovalStepper'
 import { ShareTokenPanel } from '@/components/account-currents/ShareTokenPanel'
+import { LinkedReceiptsCard } from '@/components/account-currents/LinkedReceiptsCard'
 import { ArrowLeft, Send, CheckCircle, XCircle, Download, ShieldCheck } from 'lucide-react'
 import Link from 'next/link'
 import type { AccountCurrentRow, AccountCurrentItemRow, ACStatus } from '@/types'
@@ -143,6 +144,15 @@ export default function AccountCurrentDetailPage() {
       </div>
 
       <AccountCurrentViewer ac={ac} items={items} />
+
+      <LinkedReceiptsCard
+        acId={id}
+        acNo={ac.ac_no}
+        acNetBalance={Number(ac.net_balance ?? 0)}
+        acCurrency={ac.currency_code}
+        acDirection={ac.direction}
+        contractId={ac.contract_id}
+      />
 
       {['issued', 'acknowledged'].includes(ac.status) && (
         <div className="print:hidden">
