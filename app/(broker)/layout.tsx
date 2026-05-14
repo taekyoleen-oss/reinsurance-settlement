@@ -23,6 +23,7 @@ import {
   Menu,
   ClipboardList,
   ShieldAlert,
+  CalendarClock,
 } from 'lucide-react'
 
 const NAV_ITEMS = [
@@ -30,6 +31,7 @@ const NAV_ITEMS = [
   { href: '/contracts', label: '계약 관리', icon: BookOpen, step: 1 },
   { href: '/bordereau', label: '명세 입력', icon: ClipboardList, step: 2 },
   { href: '/transactions', label: '거래 관리', icon: FileText, step: 2 },
+  { href: '/premium-schedule', label: '보험료 일정', icon: CalendarClock, step: 3 },
   { href: '/account-currents', label: '정산서 관리', icon: Layers, step: 4 },
   { href: '/settlements', label: '결제 관리', icon: CreditCard, step: 6 },
   { href: '/claims', label: '청구 관리', icon: ShieldAlert, step: 0 },

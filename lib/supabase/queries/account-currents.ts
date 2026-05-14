@@ -175,7 +175,49 @@ export async function createAccountCurrent(
     .single()
 
   if (error) throw error
+
+  // 정산 기간에 속하는 보험료 수령 내역을 자동 연결 (linked_ac_id NULL인 건만)
+  await linkPremiumReceiptsToAC({
+    db,
+    acId: ac.id,
+    contractId: data.contract_id,
+    counterpartyId: data.counterparty_id,
+    periodFrom: data.period_from,
+    periodTo: data.period_to,
+  })
+
   return { ac, isDuplicate }
+}
+
+/**
+ * AC 정산 기간에 해당하는 미연결 보험료 수령 내역을 AC에 연결한다.
+ * - rs_premium_receipts.received_date 가 [periodFrom, periodTo] 범위에 들어가고
+ * - contract_id / counterparty_id 가 일치하며
+ * - linked_ac_id 가 NULL 인 행만 대상
+ * - match_status 를 'matched' 로 표시 (전체 연결로 간주, 추후 수동 조정 가능)
+ */
+async function linkPremiumReceiptsToAC(params: {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  db: any
+  acId: string
+  contractId: string
+  counterpartyId: string
+  periodFrom: string
+  periodTo: string
+}) {
+  const { db, acId, contractId, counterpartyId, periodFrom, periodTo } = params
+  try {
+    await db
+      .from('rs_premium_receipts')
+      .update({ linked_ac_id: acId, match_status: 'matched' })
+      .eq('contract_id', contractId)
+      .eq('counterparty_id', counterpartyId)
+      .gte('received_date', periodFrom)
+      .lte('received_date', periodTo)
+      .is('linked_ac_id', null)
+  } catch {
+    // 연결 실패는 AC 생성 자체를 막지 않음 (보조 기능)
+  }
 }
 
 /**

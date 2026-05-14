@@ -106,6 +106,18 @@ export function PremiumScheduleCard({
   const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set())
   const [counterparties, setCounterparties] = useState<Counterparty[]>([])
   const [dialogSchedule, setDialogSchedule] = useState<ScheduleReceiptSummary | null>(null)
+  const [errorMsg, setErrorMsg] = useState<string | null>(null)
+
+  // 수동 추가 폼 상태
+  const [showManualAdd, setShowManualAdd] = useState(false)
+  const [manualForm, setManualForm] = useState({
+    period_label: '',
+    period_from: '',
+    period_to: '',
+    due_date: '',
+    expected_amount: '',
+  })
+  const [creatingManual, setCreatingManual] = useState(false)
 
   // 계약의 거래상대방 목록 (출재사 + 수재사)
   const fetchCounterparties = useCallback(async () => {
@@ -144,8 +156,17 @@ export function PremiumScheduleCard({
 
   const fetchData = useCallback(async () => {
     setLoading(true)
+    setErrorMsg(null)
     try {
       const res = await fetch(`/api/contracts/${contractId}/schedules?schedule_type=premium`)
+      if (!res.ok) {
+        const errJson = await res.json().catch(() => ({}))
+        const msg =
+          typeof errJson?.error === 'string'
+            ? errJson.error
+            : `정산 일정 조회 실패 (HTTP ${res.status})`
+        throw new Error(msg)
+      }
       const json = await res.json()
       const scheduleList: Array<{
         id: string
@@ -168,7 +189,7 @@ export function PremiumScheduleCard({
         const sumJson = await sumRes.json()
         summaryList = sumJson.summaries ?? []
       } else {
-        // 뷰 API가 없으면 스케줄 데이터로 빌드 (수령 0으로 가정)
+        // 뷰 API가 없으면(예: rs_v_schedule_receipt_summary 미생성) 스케줄 데이터로 빌드
         summaryList = scheduleList.map((s) => ({
           schedule_id: s.id,
           contract_id: contractId,
@@ -201,8 +222,10 @@ export function PremiumScheduleCard({
       })
       setAmounts(initAmounts)
       setDueDates(initDues)
-    } catch {
-      toast.error('보험료 일정을 불러오지 못했습니다.')
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : '보험료 일정을 불러오지 못했습니다.'
+      setErrorMsg(msg)
+      toast.error(msg)
     } finally {
       setLoading(false)
     }
@@ -239,8 +262,12 @@ export function PremiumScheduleCard({
         }),
       })
       if (!res.ok) {
-        const err = await res.json()
-        toast.error(err.error ?? '기간 생성 실패')
+        const err = await res.json().catch(() => ({}))
+        const msg =
+          typeof err?.error === 'string'
+            ? err.error
+            : '기간 생성 실패 (계약의 만기일 설정이 필요합니다)'
+        toast.error(msg)
         return
       }
       toast.success('보험료 정산 기간이 생성되었습니다.')
@@ -249,6 +276,62 @@ export function PremiumScheduleCard({
       toast.error('서버 오류')
     } finally {
       setGenerating(false)
+    }
+  }
+
+  const handleManualCreate = async () => {
+    if (!manualForm.period_label || !manualForm.period_from || !manualForm.period_to) {
+      toast.error('기간 라벨/시작/종료일은 필수입니다.')
+      return
+    }
+    setCreatingManual(true)
+    try {
+      const payload: Record<string, unknown> = {
+        schedule_type: 'premium',
+        period_label: manualForm.period_label,
+        period_from: manualForm.period_from,
+        period_to: manualForm.period_to,
+        currency_code: settlementCurrency,
+      }
+      if (manualForm.expected_amount !== '') {
+        payload.expected_amount = parseFloat(manualForm.expected_amount)
+      }
+      const res = await fetch(`/api/contracts/${contractId}/schedules`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      })
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}))
+        toast.error(typeof err?.error === 'string' ? err.error : '기간 추가 실패')
+        return
+      }
+      const created = await res.json()
+      const newId = created?.schedule?.id
+
+      // 납입 기한이 있으면 이어서 PATCH (POST 스키마는 due_date를 받지 않음)
+      if (newId && manualForm.due_date) {
+        await fetch(`/api/contracts/${contractId}/schedules/${newId}`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ due_date: manualForm.due_date }),
+        })
+      }
+
+      toast.success('정산 기간이 추가되었습니다.')
+      setManualForm({
+        period_label: '',
+        period_from: '',
+        period_to: '',
+        due_date: '',
+        expected_amount: '',
+      })
+      setShowManualAdd(false)
+      await fetchData()
+    } catch {
+      toast.error('서버 오류')
+    } finally {
+      setCreatingManual(false)
     }
   }
 
@@ -324,11 +407,105 @@ export function PremiumScheduleCard({
               — 기간별 예상 보험료와 납입 기한을 설정하고, 실제 수령을 확인하세요.
             </p>
           </div>
-          <Button size="sm" variant="outline" onClick={handleGenerate} disabled={generating}>
-            <RefreshCw className={`h-3.5 w-3.5 mr-1 ${generating ? 'animate-spin' : ''}`} />
-            {summaries.length === 0 ? '기간 자동생성' : '기간 재생성'}
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button size="sm" variant="outline" onClick={() => setShowManualAdd((v) => !v)}>
+              <PlusCircle className="h-3.5 w-3.5 mr-1" />
+              {showManualAdd ? '취소' : '수동 추가'}
+            </Button>
+            <Button size="sm" variant="outline" onClick={handleGenerate} disabled={generating}>
+              <RefreshCw className={`h-3.5 w-3.5 mr-1 ${generating ? 'animate-spin' : ''}`} />
+              {summaries.length === 0 ? '기간 자동생성' : '기간 재생성'}
+            </Button>
+          </div>
         </CardHeader>
+
+        {/* 에러 표시 */}
+        {errorMsg && (
+          <div className="mx-4 mb-3 rounded-md border border-red-300 bg-red-50 dark:border-red-800 dark:bg-red-950/40 px-3 py-2 text-xs text-red-700 dark:text-red-300 flex gap-1.5">
+            <AlertTriangle className="h-3.5 w-3.5 mt-0.5 shrink-0" />
+            <div className="flex-1">
+              <p className="font-medium">정산 일정을 불러오지 못했습니다.</p>
+              <p className="mt-0.5 text-[11px]">{errorMsg}</p>
+              <p className="mt-0.5 text-[10px] text-red-500/80">
+                Supabase 마이그레이션(step8)이 적용되었는지, 권한(broker_*)이 부여되었는지
+                확인하세요.
+              </p>
+            </div>
+          </div>
+        )}
+
+        {/* 수동 추가 폼 */}
+        {showManualAdd && (
+          <div className="mx-4 mb-3 rounded-md border border-[var(--border-default)] bg-[var(--surface-elevated)] p-3 space-y-2">
+            <p className="text-xs font-medium text-[var(--text-secondary)]">
+              정산 기간 수동 추가 — 계약 만기일이 없거나 비정기 기간을 추가할 때 사용하세요.
+            </p>
+            <div className="grid grid-cols-2 md:grid-cols-5 gap-2">
+              <div className="space-y-1">
+                <label className="text-[10px] text-[var(--text-muted)]">기간 라벨</label>
+                <Input
+                  type="text"
+                  placeholder="2026-Q2"
+                  value={manualForm.period_label}
+                  onChange={(e) => setManualForm((p) => ({ ...p, period_label: e.target.value }))}
+                  className="h-7 text-xs"
+                />
+              </div>
+              <div className="space-y-1">
+                <label className="text-[10px] text-[var(--text-muted)]">시작일</label>
+                <Input
+                  type="date"
+                  value={manualForm.period_from}
+                  onChange={(e) => setManualForm((p) => ({ ...p, period_from: e.target.value }))}
+                  className="h-7 text-xs font-mono"
+                />
+              </div>
+              <div className="space-y-1">
+                <label className="text-[10px] text-[var(--text-muted)]">종료일</label>
+                <Input
+                  type="date"
+                  value={manualForm.period_to}
+                  onChange={(e) => setManualForm((p) => ({ ...p, period_to: e.target.value }))}
+                  className="h-7 text-xs font-mono"
+                />
+              </div>
+              <div className="space-y-1">
+                <label className="text-[10px] text-[var(--text-muted)]">납입 기한</label>
+                <Input
+                  type="date"
+                  value={manualForm.due_date}
+                  onChange={(e) => setManualForm((p) => ({ ...p, due_date: e.target.value }))}
+                  className="h-7 text-xs font-mono"
+                />
+              </div>
+              <div className="space-y-1">
+                <label className="text-[10px] text-[var(--text-muted)]">예상 보험료</label>
+                <Input
+                  type="number"
+                  min="0"
+                  step="1"
+                  placeholder="0"
+                  value={manualForm.expected_amount}
+                  onChange={(e) =>
+                    setManualForm((p) => ({ ...p, expected_amount: e.target.value }))
+                  }
+                  className="h-7 text-xs font-mono text-right"
+                />
+              </div>
+            </div>
+            <div className="flex justify-end">
+              <Button
+                size="sm"
+                onClick={handleManualCreate}
+                disabled={creatingManual}
+                className="h-7 text-xs"
+              >
+                <Save className="h-3 w-3 mr-1" />
+                {creatingManual ? '추가 중...' : '기간 추가'}
+              </Button>
+            </div>
+          </div>
+        )}
 
         <CardContent className="space-y-0 p-0">
           {loading ? (
@@ -336,8 +513,12 @@ export function PremiumScheduleCard({
               불러오는 중...
             </div>
           ) : summaries.length === 0 ? (
-            <div className="py-8 text-center text-sm text-[var(--text-muted)]">
-              기간이 없습니다. 계약 만기일이 설정된 후 &apos;기간 자동생성&apos;을 클릭하세요.
+            <div className="py-8 text-center text-sm text-[var(--text-muted)] space-y-1">
+              <p>아직 정산 기간이 없습니다.</p>
+              <p className="text-[11px]">
+                <strong>기간 자동생성</strong>(만기일 필요) 또는 <strong>수동 추가</strong>로 기간을
+                만든 뒤 예상 보험료·납입 기한을 입력하세요.
+              </p>
             </div>
           ) : (
             <Table>
