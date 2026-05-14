@@ -22,12 +22,18 @@ import type { PremiumBordereauRow, LossBordereauRow } from '@/types'
 export function BordereauPageClient() {
   const router = useRouter()
   const searchParams = useSearchParams()
-  const [activeTab, setActiveTab] = useState<'premium' | 'loss'>('premium')
+  // URL 쿼리(contractId / tab)는 마운트 시 동기 초기화로 잡아 첫 fetch 가
+  // 정확한 contractId 로 시작하도록 함 (이전에는 useEffect 로 늦게 set →
+  // contractId 비어있는 상태로 한번 fetch → 전체 계약이 잠시 보이는 race 발생)
+  const [activeTab, setActiveTab] = useState<'premium' | 'loss'>(() => {
+    const t = searchParams.get('tab')
+    return t === 'loss' ? 'loss' : 'premium'
+  })
   const [premiumRows, setPremiumRows] = useState<PremiumBordereauRow[]>([])
   const [lossRows, setLossRows] = useState<LossBordereauRow[]>([])
   const [loading, setLoading] = useState(false)
   const allContracts = useContracts()
-  const [contractId, setContractId] = useState('')
+  const [contractId, setContractId] = useState(() => searchParams.get('contractId') ?? '')
   const [filterCedantId, setFilterCedantId] = useState('')
   const [period, setPeriod] = useState('')
 
@@ -36,19 +42,35 @@ export function BordereauPageClient() {
     [allContracts, filterCedantId]
   )
 
+  // URL 의 contractId 로 로딩된 계약은 출재사 필터로 인해 사라지지 않도록 보존
+  // (사용자가 직접 출재사 필터를 바꾼 뒤 비어있는 select 가 되면 그때 자동 비움)
   useEffect(() => {
     if (!contractId || contracts.length === 0) return
-    if (!contracts.some((c) => c.id === contractId)) {
+    if (filterCedantId && !contracts.some((c) => c.id === contractId)) {
       setContractId('')
     }
-  }, [contracts, contractId])
+  }, [contracts, contractId, filterCedantId])
 
+  // URL 쿼리 변경(같은 페이지에서 다른 계약으로 이동)에도 반응
   useEffect(() => {
     const q = searchParams.get('contractId')
-    if (q) setContractId(q)
+    if (q && q !== contractId) setContractId(q)
     const tab = searchParams.get('tab')
-    if (tab === 'loss' || tab === 'premium') setActiveTab(tab)
+    if ((tab === 'loss' || tab === 'premium') && tab !== activeTab) setActiveTab(tab)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchParams])
+
+  // 계약번호·출재사 lookup 맵
+  const contractsMap = useMemo(() => {
+    const m = new Map<string, { contract_no: string; cedant_name?: string }>()
+    allContracts.forEach((c) =>
+      m.set(c.id, {
+        contract_no: c.contract_no,
+        cedant_name: c.cedant?.company_name_ko,
+      })
+    )
+    return m
+  }, [allContracts])
 
   const loadAll = useCallback(async () => {
     setLoading(true)
@@ -183,6 +205,7 @@ export function BordereauPageClient() {
           ) : (
             <PremiumBordereauTable
               rows={premiumRows}
+              contractsMap={contractsMap}
               onSelect={(row) => router.push(`/bordereau/premium/${row.id}`)}
             />
           )}
@@ -197,6 +220,7 @@ export function BordereauPageClient() {
           ) : (
             <LossBordereauTable
               rows={lossRows}
+              contractsMap={contractsMap}
               onSelect={(row) => router.push(`/bordereau/loss/${row.id}`)}
             />
           )}

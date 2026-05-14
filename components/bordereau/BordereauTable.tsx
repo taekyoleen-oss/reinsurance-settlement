@@ -35,12 +35,22 @@ function fmtNum(n: number, currency = '') {
 
 // ─── Premium Bordereau 테이블 ─────────────────
 
+type ContractInfo = { contract_no: string; cedant_name?: string }
+type ContractsMap = Map<string, ContractInfo> | Record<string, ContractInfo>
+
+function lookupContract(map: ContractsMap | undefined, id: string): ContractInfo | undefined {
+  if (!map) return undefined
+  if (map instanceof Map) return map.get(id)
+  return (map as Record<string, ContractInfo>)[id]
+}
+
 interface PremiumTableProps {
   rows: PremiumBordereauRow[]
+  contractsMap?: ContractsMap
   onSelect?: (row: PremiumBordereauRow) => void
 }
 
-export function PremiumBordereauTable({ rows, onSelect }: PremiumTableProps) {
+export function PremiumBordereauTable({ rows, contractsMap, onSelect }: PremiumTableProps) {
   if (rows.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center py-12 text-[var(--text-muted)]">
@@ -55,6 +65,7 @@ export function PremiumBordereauTable({ rows, onSelect }: PremiumTableProps) {
       <table className="w-full border-collapse text-xs">
         <thead>
           <tr className="border-b border-border bg-surface-elevated text-[var(--text-muted)] text-left">
+            <th className="px-3 py-2 font-medium">계약번호</th>
             <th className="px-3 py-2 font-medium">회계기간</th>
             <th className="px-3 py-2 font-medium">증권번호</th>
             <th className="px-3 py-2 font-medium">피보험자</th>
@@ -68,39 +79,52 @@ export function PremiumBordereauTable({ rows, onSelect }: PremiumTableProps) {
           </tr>
         </thead>
         <tbody>
-          {rows.map((row) => (
-            <tr
-              key={row.id}
-              onClick={() => onSelect?.(row)}
-              className={cn(
-                'border-b border-border hover:bg-surface-elevated/50 transition-colors',
-                onSelect && 'cursor-pointer'
-              )}
-            >
-              <td className="px-3 py-2 font-mono text-xs">{row.period_yyyyqn}</td>
-              <td className="px-3 py-2 font-mono">{row.policy_no}</td>
-              <td className="px-3 py-2">{row.insured_name ?? '-'}</td>
-              <td className="px-3 py-2 whitespace-nowrap text-[var(--text-muted)]">
-                {row.risk_period_from} ~ {row.risk_period_to}
-              </td>
-              <td className="px-3 py-2 text-right font-mono">{fmtNum(row.sum_insured)}</td>
-              <td className="px-3 py-2 text-right font-mono">
-                {fmtNum(row.original_premium, row.currency)}
-              </td>
-              <td className="px-3 py-2 text-right font-mono">
-                {(row.cession_pct * 100).toFixed(2)}%
-              </td>
-              <td className="px-3 py-2 text-right font-mono font-semibold">
-                {fmtNum(row.ceded_premium, row.currency)}
-              </td>
-              <td className="px-3 py-2">
-                <EntryTypeBadge type={row.entry_type} />
-              </td>
-              <td className="px-3 py-2">
-                <ValidationBadge status={row.validation_status} />
-              </td>
-            </tr>
-          ))}
+          {rows.map((row) => {
+            const c = lookupContract(contractsMap, row.contract_id)
+            return (
+              <tr
+                key={row.id}
+                onClick={() => onSelect?.(row)}
+                className={cn(
+                  'border-b border-border hover:bg-surface-elevated/50 transition-colors',
+                  onSelect && 'cursor-pointer'
+                )}
+              >
+                <td className="px-3 py-2 font-mono text-xs whitespace-nowrap">
+                  {c?.contract_no ?? (
+                    <span className="text-[var(--text-muted)]">{row.contract_id.slice(0, 8)}…</span>
+                  )}
+                  {c?.cedant_name && (
+                    <span className="ml-1 text-[10px] text-[var(--text-muted)]">
+                      · {c.cedant_name}
+                    </span>
+                  )}
+                </td>
+                <td className="px-3 py-2 font-mono text-xs">{row.period_yyyyqn}</td>
+                <td className="px-3 py-2 font-mono">{row.policy_no}</td>
+                <td className="px-3 py-2">{row.insured_name ?? '-'}</td>
+                <td className="px-3 py-2 whitespace-nowrap text-[var(--text-muted)]">
+                  {row.risk_period_from} ~ {row.risk_period_to}
+                </td>
+                <td className="px-3 py-2 text-right font-mono">{fmtNum(row.sum_insured)}</td>
+                <td className="px-3 py-2 text-right font-mono">
+                  {fmtNum(row.original_premium, row.currency)}
+                </td>
+                <td className="px-3 py-2 text-right font-mono">
+                  {(row.cession_pct * 100).toFixed(2)}%
+                </td>
+                <td className="px-3 py-2 text-right font-mono font-semibold">
+                  {fmtNum(row.ceded_premium, row.currency)}
+                </td>
+                <td className="px-3 py-2">
+                  <EntryTypeBadge type={row.entry_type} />
+                </td>
+                <td className="px-3 py-2">
+                  <ValidationBadge status={row.validation_status} />
+                </td>
+              </tr>
+            )
+          })}
         </tbody>
       </table>
     </div>
@@ -125,10 +149,11 @@ function EntryTypeBadge({ type }: { type: string }) {
 
 interface LossTableProps {
   rows: LossBordereauRow[]
+  contractsMap?: ContractsMap
   onSelect?: (row: LossBordereauRow) => void
 }
 
-export function LossBordereauTable({ rows, onSelect }: LossTableProps) {
+export function LossBordereauTable({ rows, contractsMap, onSelect }: LossTableProps) {
   if (rows.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center py-12 text-[var(--text-muted)]">
@@ -143,6 +168,7 @@ export function LossBordereauTable({ rows, onSelect }: LossTableProps) {
       <table className="w-full border-collapse text-xs">
         <thead>
           <tr className="border-b border-border bg-surface-elevated text-[var(--text-muted)] text-left">
+            <th className="px-3 py-2 font-medium">계약번호</th>
             <th className="px-3 py-2 font-medium">회계기간</th>
             <th className="px-3 py-2 font-medium">사고번호</th>
             <th className="px-3 py-2 font-medium">사고일</th>
@@ -156,47 +182,60 @@ export function LossBordereauTable({ rows, onSelect }: LossTableProps) {
           </tr>
         </thead>
         <tbody>
-          {rows.map((row) => (
-            <tr
-              key={row.id}
-              onClick={() => onSelect?.(row)}
-              className={cn(
-                'border-b border-border hover:bg-surface-elevated/50 transition-colors',
-                onSelect && 'cursor-pointer'
-              )}
-            >
-              <td className="px-3 py-2 font-mono text-xs">{row.period_yyyyqn}</td>
-              <td className="px-3 py-2 font-mono">{row.claim_no}</td>
-              <td className="px-3 py-2 whitespace-nowrap">{row.loss_date}</td>
-              <td className="px-3 py-2 text-right font-mono">
-                {fmtNum(row.paid_amount, row.currency)}
-              </td>
-              <td className="px-3 py-2 text-right font-mono">
-                {fmtNum(row.os_reserve, row.currency)}
-              </td>
-              <td className="px-3 py-2 text-right font-mono">
-                {(row.cession_pct * 100).toFixed(2)}%
-              </td>
-              <td className="px-3 py-2 text-right font-mono font-semibold">
-                {fmtNum(row.recoverable_amount, row.currency)}
-              </td>
-              <td className="px-3 py-2">
-                {row.is_cash_loss ? (
-                  <span className="inline-flex items-center rounded border border-warning-urgent/30 bg-warning-urgent/10 px-1.5 py-0.5 text-[10px] font-medium text-warning-urgent">
-                    Cash Loss
-                  </span>
-                ) : (
-                  <span className="text-[var(--text-muted)]">-</span>
+          {rows.map((row) => {
+            const c = lookupContract(contractsMap, row.contract_id)
+            return (
+              <tr
+                key={row.id}
+                onClick={() => onSelect?.(row)}
+                className={cn(
+                  'border-b border-border hover:bg-surface-elevated/50 transition-colors',
+                  onSelect && 'cursor-pointer'
                 )}
-              </td>
-              <td className="px-3 py-2">
-                <LossStatusBadge status={row.loss_status} />
-              </td>
-              <td className="px-3 py-2">
-                <ValidationBadge status={row.validation_status} />
-              </td>
-            </tr>
-          ))}
+              >
+                <td className="px-3 py-2 font-mono text-xs whitespace-nowrap">
+                  {c?.contract_no ?? (
+                    <span className="text-[var(--text-muted)]">{row.contract_id.slice(0, 8)}…</span>
+                  )}
+                  {c?.cedant_name && (
+                    <span className="ml-1 text-[10px] text-[var(--text-muted)]">
+                      · {c.cedant_name}
+                    </span>
+                  )}
+                </td>
+                <td className="px-3 py-2 font-mono text-xs">{row.period_yyyyqn}</td>
+                <td className="px-3 py-2 font-mono">{row.claim_no}</td>
+                <td className="px-3 py-2 whitespace-nowrap">{row.loss_date}</td>
+                <td className="px-3 py-2 text-right font-mono">
+                  {fmtNum(row.paid_amount, row.currency)}
+                </td>
+                <td className="px-3 py-2 text-right font-mono">
+                  {fmtNum(row.os_reserve, row.currency)}
+                </td>
+                <td className="px-3 py-2 text-right font-mono">
+                  {(row.cession_pct * 100).toFixed(2)}%
+                </td>
+                <td className="px-3 py-2 text-right font-mono font-semibold">
+                  {fmtNum(row.recoverable_amount, row.currency)}
+                </td>
+                <td className="px-3 py-2">
+                  {row.is_cash_loss ? (
+                    <span className="inline-flex items-center rounded border border-warning-urgent/30 bg-warning-urgent/10 px-1.5 py-0.5 text-[10px] font-medium text-warning-urgent">
+                      Cash Loss
+                    </span>
+                  ) : (
+                    <span className="text-[var(--text-muted)]">-</span>
+                  )}
+                </td>
+                <td className="px-3 py-2">
+                  <LossStatusBadge status={row.loss_status} />
+                </td>
+                <td className="px-3 py-2">
+                  <ValidationBadge status={row.validation_status} />
+                </td>
+              </tr>
+            )
+          })}
         </tbody>
       </table>
     </div>
