@@ -90,21 +90,24 @@ export function PremiumBordereauTable({ rows, contractsMap, onSelect }: PremiumT
                   onSelect && 'cursor-pointer'
                 )}
               >
-                <td className="px-3 py-2 font-mono text-xs whitespace-nowrap">
-                  {c?.contract_no ?? (
-                    <span className="text-[var(--text-muted)]">{row.contract_id.slice(0, 8)}…</span>
-                  )}
-                  {c?.cedant_name && (
-                    <span className="ml-1 text-[10px] text-[var(--text-muted)]">
-                      · {c.cedant_name}
-                    </span>
-                  )}
+                <td className="px-3 py-2 whitespace-nowrap">
+                  <div className="font-mono text-xs">
+                    {c?.contract_no ?? (
+                      <span className="text-[var(--text-muted)]">
+                        {row.contract_id.slice(0, 8)}…
+                      </span>
+                    )}
+                  </div>
+                  <div className="text-[10px] text-[var(--text-muted)]">
+                    {c?.cedant_name ?? '-'}
+                  </div>
                 </td>
                 <td className="px-3 py-2 font-mono text-xs">{row.period_yyyyqn}</td>
                 <td className="px-3 py-2 font-mono">{row.policy_no}</td>
                 <td className="px-3 py-2">{row.insured_name ?? '-'}</td>
                 <td className="px-3 py-2 whitespace-nowrap text-[var(--text-muted)]">
-                  {row.risk_period_from} ~ {row.risk_period_to}
+                  <div className="font-mono text-[11px]">{row.risk_period_from}</div>
+                  <div className="font-mono text-[11px]">~ {row.risk_period_to}</div>
                 </td>
                 <td className="px-3 py-2 text-right font-mono">{fmtNum(row.sum_insured)}</td>
                 <td className="px-3 py-2 text-right font-mono">
@@ -193,15 +196,17 @@ export function LossBordereauTable({ rows, contractsMap, onSelect }: LossTablePr
                   onSelect && 'cursor-pointer'
                 )}
               >
-                <td className="px-3 py-2 font-mono text-xs whitespace-nowrap">
-                  {c?.contract_no ?? (
-                    <span className="text-[var(--text-muted)]">{row.contract_id.slice(0, 8)}…</span>
-                  )}
-                  {c?.cedant_name && (
-                    <span className="ml-1 text-[10px] text-[var(--text-muted)]">
-                      · {c.cedant_name}
-                    </span>
-                  )}
+                <td className="px-3 py-2 whitespace-nowrap">
+                  <div className="font-mono text-xs">
+                    {c?.contract_no ?? (
+                      <span className="text-[var(--text-muted)]">
+                        {row.contract_id.slice(0, 8)}…
+                      </span>
+                    )}
+                  </div>
+                  <div className="text-[10px] text-[var(--text-muted)]">
+                    {c?.cedant_name ?? '-'}
+                  </div>
                 </td>
                 <td className="px-3 py-2 font-mono text-xs">{row.period_yyyyqn}</td>
                 <td className="px-3 py-2 font-mono">{row.claim_no}</td>
