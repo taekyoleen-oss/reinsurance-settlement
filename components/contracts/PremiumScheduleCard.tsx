@@ -107,6 +107,11 @@ export function PremiumScheduleCard({
   const [counterparties, setCounterparties] = useState<Counterparty[]>([])
   const [dialogSchedule, setDialogSchedule] = useState<ScheduleReceiptSummary | null>(null)
   const [errorMsg, setErrorMsg] = useState<string | null>(null)
+  const [errorDiag, setErrorDiag] = useState<{
+    code?: string | null
+    details?: string | null
+    hint?: string | null
+  } | null>(null)
 
   // 수동 추가 폼 상태
   const [showManualAdd, setShowManualAdd] = useState(false)
@@ -157,6 +162,7 @@ export function PremiumScheduleCard({
   const fetchData = useCallback(async () => {
     setLoading(true)
     setErrorMsg(null)
+    setErrorDiag(null)
     try {
       const res = await fetch(`/api/contracts/${contractId}/schedules?schedule_type=premium`)
       if (!res.ok) {
@@ -165,6 +171,7 @@ export function PremiumScheduleCard({
           typeof errJson?.error === 'string'
             ? errJson.error
             : `정산 일정 조회 실패 (HTTP ${res.status})`
+        if (errJson?.diagnostics) setErrorDiag(errJson.diagnostics)
         throw new Error(msg)
       }
       const json = await res.json()
@@ -423,12 +430,19 @@ export function PremiumScheduleCard({
         {errorMsg && (
           <div className="mx-4 mb-3 rounded-md border border-red-300 bg-red-50 dark:border-red-800 dark:bg-red-950/40 px-3 py-2 text-xs text-red-700 dark:text-red-300 flex gap-1.5">
             <AlertTriangle className="h-3.5 w-3.5 mt-0.5 shrink-0" />
-            <div className="flex-1">
+            <div className="flex-1 space-y-0.5">
               <p className="font-medium">정산 일정을 불러오지 못했습니다.</p>
-              <p className="mt-0.5 text-[11px]">{errorMsg}</p>
-              <p className="mt-0.5 text-[10px] text-red-500/80">
-                Supabase 마이그레이션(step8)이 적용되었는지, 권한(broker_*)이 부여되었는지
-                확인하세요.
+              <p className="text-[11px]">{errorMsg}</p>
+              {errorDiag && (errorDiag.code || errorDiag.details || errorDiag.hint) && (
+                <pre className="mt-1 whitespace-pre-wrap rounded bg-red-100/60 dark:bg-red-900/30 p-1.5 font-mono text-[10px] leading-tight">
+                  {errorDiag.code && `code: ${errorDiag.code}\n`}
+                  {errorDiag.details && `details: ${errorDiag.details}\n`}
+                  {errorDiag.hint && `hint: ${errorDiag.hint}`}
+                </pre>
+              )}
+              <p className="text-[10px] text-red-500/80">
+                Supabase 마이그레이션(step5/step8) 적용 여부와 rs_user_profiles의 broker_* 권한
+                등록을 확인하세요.
               </p>
             </div>
           </div>

@@ -22,7 +22,19 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
     const data = await getSchedulesByContract(id, scheduleType)
     return NextResponse.json({ schedules: data })
   } catch (err) {
-    return handleApiError(err)
+    // 브로커 내부 API — 진단을 위해 실제 DB 에러 본문을 응답에 포함
+    const e = err as { message?: string; code?: string; details?: string; hint?: string }
+    return NextResponse.json(
+      {
+        error: e?.message ?? '정산 일정 조회 실패',
+        diagnostics: {
+          code: e?.code ?? null,
+          details: e?.details ?? null,
+          hint: e?.hint ?? null,
+        },
+      },
+      { status: 500 }
+    )
   }
 }
 
