@@ -24,6 +24,8 @@ import {
   ClipboardList,
   ShieldAlert,
   CalendarClock,
+  Coins,
+  Upload,
 } from 'lucide-react'
 
 const NAV_ITEMS = [
@@ -34,6 +36,8 @@ const NAV_ITEMS = [
   { href: '/premium-schedule', label: '보험료 일정', icon: CalendarClock, step: 3 },
   { href: '/account-currents', label: '정산서 관리', icon: Layers, step: 4 },
   { href: '/settlements', label: '결제 관리', icon: CreditCard, step: 6 },
+  { href: '/receipts/upload', label: '은행 업로드', icon: Upload, step: 5 },
+  { href: '/commissions', label: '수수료', icon: Coins, step: 0 },
   { href: '/claims', label: '청구 관리', icon: ShieldAlert, step: 0 },
   { href: '/outstanding', label: '미청산 잔액', icon: AlertCircle, step: 7 },
   { href: '/reconciliation', label: '대사 관리', icon: GitMerge, step: 0 },

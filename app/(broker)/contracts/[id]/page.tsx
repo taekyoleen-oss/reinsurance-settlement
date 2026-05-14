@@ -18,6 +18,7 @@ import { ArrowLeft, ClipboardList, FileText, Layers, Plus } from 'lucide-react'
 import Link from 'next/link'
 import { AttachmentSection } from '@/components/shared/AttachmentSection'
 import { PremiumScheduleCard } from '@/components/contracts/PremiumScheduleCard'
+import { LossScheduleCard } from '@/components/contracts/LossScheduleCard'
 import { ContractWorkflowCard } from '@/components/contracts/ContractWorkflowCard'
 import type { ContractWithCedantRow } from '@/types'
 
@@ -195,6 +196,8 @@ export default function ContractDetailPage() {
         }
         settlementCurrency={contract.settlement_currency}
       />
+
+      <LossScheduleCard contractId={id} settlementCurrency={contract.settlement_currency} />
 
       <AttachmentSection entityType="contract" entityId={id} />
 

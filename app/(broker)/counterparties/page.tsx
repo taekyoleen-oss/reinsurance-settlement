@@ -35,7 +35,7 @@ const fetcher = (url: string) =>
 const TYPE_LABELS: Record<string, string> = {
   reinsurer: '수재사',
   cedant: '출재사',
-  broker: '브로커',
+  broker: '공동중개사',
 }
 
 const CP_URL = '/api/counterparties'
@@ -177,7 +177,7 @@ export default function CounterpartiesPage() {
                   <SelectContent>
                     <SelectItem value="reinsurer">수재사</SelectItem>
                     <SelectItem value="cedant">출재사</SelectItem>
-                    <SelectItem value="broker">브로커</SelectItem>
+                    <SelectItem value="broker">공동중개사</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -255,7 +255,7 @@ export default function CounterpartiesPage() {
             <SelectItem value="all">전체</SelectItem>
             <SelectItem value="reinsurer">수재사</SelectItem>
             <SelectItem value="cedant">출재사</SelectItem>
-            <SelectItem value="broker">브로커</SelectItem>
+            <SelectItem value="broker">공동중개사</SelectItem>
           </SelectContent>
         </Select>
       </div>
@@ -307,7 +307,7 @@ export default function CounterpartiesPage() {
                           ? 'accent'
                           : cp.company_type === 'cedant'
                             ? 'default'
-                            : 'default'
+                            : 'warning'
                       }
                     >
                       {TYPE_LABELS[cp.company_type] ?? cp.company_type}
