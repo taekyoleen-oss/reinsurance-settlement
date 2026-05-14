@@ -45,9 +45,14 @@ DELETE FROM rs_contract_settlement_schedules
  WHERE schedule_type = 'premium'
    AND contract_id IN (SELECT id FROM rs_contracts WHERE status = 'active');
 
-DELETE FROM rs_premium_bordereau
- WHERE transaction_id IS NULL
-   AND contract_id IN (SELECT id FROM rs_contracts WHERE status = 'active');
+-- premium_bordereau 는 transaction 미연결 + loss_bordereau 에서 미참조인 행만 삭제
+DELETE FROM rs_premium_bordereau pb
+ WHERE pb.transaction_id IS NULL
+   AND pb.contract_id IN (SELECT id FROM rs_contracts WHERE status = 'active')
+   AND NOT EXISTS (
+       SELECT 1 FROM rs_loss_bordereau lb
+        WHERE lb.premium_bordereau_id = pb.id
+   );
 
 -- ─────────────────────────────────────────────────────────────────────────────
 -- 2. 시나리오 데이터 생성 (PL/pgSQL)
