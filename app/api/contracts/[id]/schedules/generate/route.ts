@@ -1,5 +1,4 @@
 import { NextResponse } from 'next/server'
-import { handleApiError } from '@/lib/api/error-handler'
 import { createClient } from '@/lib/supabase/server'
 import { generateAndInsertSchedules } from '@/lib/supabase/queries/contract-schedules'
 import { z } from 'zod'
@@ -47,6 +46,17 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
     })
     return NextResponse.json({ schedules, count: schedules.length })
   } catch (err) {
-    return handleApiError(err)
+    const e = err as { message?: string; code?: string; details?: string; hint?: string }
+    return NextResponse.json(
+      {
+        error: e?.message ?? '정산 기간 생성 실패',
+        diagnostics: {
+          code: e?.code ?? null,
+          details: e?.details ?? null,
+          hint: e?.hint ?? null,
+        },
+      },
+      { status: 500 }
+    )
   }
 }
