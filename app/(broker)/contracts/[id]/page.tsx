@@ -18,6 +18,7 @@ import { ArrowLeft, ClipboardList, FileText, Layers, Plus } from 'lucide-react'
 import Link from 'next/link'
 import { AttachmentSection } from '@/components/shared/AttachmentSection'
 import { PremiumScheduleCard } from '@/components/contracts/PremiumScheduleCard'
+import { ContractWorkflowCard } from '@/components/contracts/ContractWorkflowCard'
 import type { ContractWithCedantRow } from '@/types'
 
 interface ShareRow {
@@ -182,6 +183,8 @@ export default function ContractDetailPage() {
           </CardContent>
         </Card>
       </div>
+
+      <ContractWorkflowCard contractId={id} />
 
       <PremiumScheduleCard
         contractId={id}
