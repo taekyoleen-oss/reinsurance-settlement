@@ -626,9 +626,20 @@ export function PremiumScheduleCard({
                           </div>
                         </TableCell>
 
-                        {/* 수령 확인액 */}
-                        <TableCell className="text-right font-mono text-xs text-[var(--text-number)]">
-                          {s.total_inbound > 0 ? s.total_inbound.toLocaleString() : '–'}
+                        {/* 수령 확인액 — 클릭 시 수령 내역 펼침 */}
+                        <TableCell className="text-right font-mono text-xs">
+                          {s.total_inbound > 0 ? (
+                            <button
+                              type="button"
+                              onClick={() => handleToggleExpand(s.schedule_id)}
+                              title="클릭하면 수령 내역(은행참조·거래연결) 펼침/접기"
+                              className="text-[var(--text-number)] underline decoration-dotted underline-offset-2 hover:text-emerald-600 hover:decoration-solid focus:outline-none focus:ring-1 focus:ring-emerald-500 rounded px-0.5"
+                            >
+                              {s.total_inbound.toLocaleString()}
+                            </button>
+                          ) : (
+                            <span className="text-[var(--text-muted)]">–</span>
+                          )}
                         </TableCell>
 
                         {/* 잔액 */}
